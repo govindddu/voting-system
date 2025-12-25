@@ -51,7 +51,7 @@ const voterSchema = new mongoose.Schema({
   },
 
   documentFile: {
-    type: String, // file path or cloud URL
+    type: String, 
     required: true
   },
 
@@ -62,7 +62,7 @@ const voterSchema = new mongoose.Schema({
   },
 
   remarks: {
-    type: String // admin rejection reason
+    type: String 
   }
 });
 
