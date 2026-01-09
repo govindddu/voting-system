@@ -8,6 +8,10 @@ const User = require("../models/User");
  */
 const registerUser = async (req, res) => {
   try {
+
+
+
+
     const { fullName, email, phoneNumber, password, role } = req.body;
     console.log("Register request received:", { fullName, email, phoneNumber, role });
 
