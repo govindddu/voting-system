@@ -1,15 +1,22 @@
 const express = require("express");
+const cors = require("cors");
 const dotenv = require("dotenv");
 const connectDB = require("./config/db");
 const authRoutes = require("./routes/authRoutes");
 const voterRoutes = require("./routes/voterRoutes");
 const electionRoutes = require("./routes/electionRoutes");
-const candidateRoutes = require("./routes/candidateRoutes"); 
+const candidateRoutes = require("./routes/candidateRoutes");
 
 dotenv.config();       // Load env variables
 connectDB();           // Connect MongoDB
 
 const app = express();
+app.use(
+  cors({
+    origin: process.env.CLIENT_ORIGIN || "http://localhost:3000",
+    credentials: false,
+  })
+);
 app.use(express.json()); // Parse JSON
 app.use(express.urlencoded({ extended: true }));
 

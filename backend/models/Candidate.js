@@ -23,17 +23,24 @@ const candidateSchema = new mongoose.Schema({
   },
 
   symbol: {
-    type: String // image filename
+    type: String // party symbol image
+  },
+
+  documentType: {
+    type: String,
+    enum: ["AADHAR", "PAN", "VOTER"],
+    required: true
+  },
+
+  documentFile: {
+    type: String,
+    required: true
   },
 
   status: {
     type: String,
-    enum: ["PENDING", "APPROVED", "REJECTED"],
+    enum: ["PENDING", "VERIFIED", "REJECTED"],
     default: "PENDING"
-  },
-
-  remarks: {
-    type: String
   },
 
   createdAt: {

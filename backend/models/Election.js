@@ -17,20 +17,6 @@ const electionSchema = new mongoose.Schema({
     required: true
   },
 
-  district: {
-    type: String,
-    required: function () {
-      return this.level === "DISTRICT";
-    }
-  },
-
-  state: {
-    type: String,
-    required: function () {
-      return this.level !== "NATIONAL";
-    }
-  },
-
   electionStart: {
     type: Date,
     required: true
@@ -48,8 +34,8 @@ const electionSchema = new mongoose.Schema({
 
   status: {
     type: String,
-    enum: ["UPCOMING", "ONGOING", "COMPLETED"],
-    default: "UPCOMING"
+    enum: ["DRAFT", "UPCOMING", "ONGOING", "COMPLETED"],
+    default: "DRAFT"
   },
 
   createdBy: {
