@@ -43,10 +43,19 @@ const candidateSchema = new mongoose.Schema({
     default: "PENDING"
   },
 
+
   createdAt: {
     type: Date,
     default: Date.now
+  },
+  blockchainCandidateId: {
+    type: Number
+  },
+
+  blockchainTx: {
+    type: String
   }
+
 });
 
 module.exports = mongoose.model("Candidate", candidateSchema);
