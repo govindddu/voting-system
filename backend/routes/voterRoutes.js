@@ -7,6 +7,7 @@ const uploadDocument = require("../middleware/uploadMiddleware");
 const {
     createVoterProfile,
     getMyVoterProfile,
+    verifyVoter
 } = require("../controllers/voterController");
 
 // CREATE voter (POST)
@@ -18,6 +19,13 @@ router.post(
 );
 
 
+
+
+
 router.get("/me", protect, getMyVoterProfile);
+
+
+// ADMIN → verify voter
+router.put("/:id/verify", protect, verifyVoter);
 
 module.exports = router;

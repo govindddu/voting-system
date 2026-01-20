@@ -6,7 +6,7 @@ const authRoutes = require("./routes/authRoutes");
 const voterRoutes = require("./routes/voterRoutes");
 const electionRoutes = require("./routes/electionRoutes");
 const candidateRoutes = require("./routes/candidateRoutes");
-
+const voteRoutes = require("./routes/voteRoutes");
 dotenv.config();       // Load env variables
 connectDB();           // Connect MongoDB
 
@@ -35,6 +35,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/voters", voterRoutes);
 app.use("/api/elections", electionRoutes);
 app.use("/api/candidates", candidateRoutes);
+app.use("/api/votes", voteRoutes);
 
 
 
