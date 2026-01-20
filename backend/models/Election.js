@@ -1,6 +1,15 @@
 const mongoose = require("mongoose");
 
 const electionSchema = new mongoose.Schema({
+  electionId: {
+    type: Number,
+    unique: true
+  },
+
+  // ✅ Blockchain tx hash for creation
+  blockchainTx: {
+    type: String
+  },
   title: {
     type: String,
     required: true,
