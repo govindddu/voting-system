@@ -1,4 +1,11 @@
-const Voter = require("../models/Voter");
+
+import contract from "../Blockchain/contract.js";
+import Election from "../models/Election.js";
+import Candidate from "../models/Candidate.js";
+
+import Voter from "../models/Voter.js";
+
+
 
 // CREATE VOTER
 const createVoterProfile = async (req, res) => {
@@ -60,7 +67,47 @@ const getMyVoterProfile = async (req, res) => {
     }
 };
 
-module.exports = {
-    createVoterProfile,
-    getMyVoterProfile,
+export const verifyVoter = async (req, res) => {
+  try {
+    // Only ADMIN
+    if (req.user.role !== "ADMIN") {
+      return res.status(403).json({ message: "Access denied" });
+    }
+
+    const { status, remarks } = req.body;
+
+    if (!status) {
+      return res.status(400).json({ message: "status is required" });
+    }
+
+    if (!["VERIFIED", "REJECTED"].includes(status)) {
+      return res.status(400).json({ message: "Invalid status value" });
+    }
+
+    const voter = await Voter.findById(req.params.id);
+
+    if (!voter) {
+      return res.status(404).json({ message: "Voter not found" });
+    }
+
+    voter.status = status;
+    voter.remarks = remarks || "";
+
+    await voter.save();
+
+    return res.json({
+      message: `Voter ${status.toLowerCase()} successfully`,
+      voter
+    });
+
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
 };
+
+export {
+  createVoterProfile,
+  getMyVoterProfile,
+ 
+};
+

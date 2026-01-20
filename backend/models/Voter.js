@@ -51,7 +51,7 @@ const voterSchema = new mongoose.Schema({
   },
 
   documentFile: {
-    type: String, 
+    type: String,
     required: true
   },
 
@@ -62,8 +62,14 @@ const voterSchema = new mongoose.Schema({
   },
 
   remarks: {
-    type: String 
+    type: String
+  },
+  walletAddress: {
+    type: String,
+    unique: true,
+    sparse: true
   }
+
 });
 
 module.exports = mongoose.model("Voter", voterSchema);
