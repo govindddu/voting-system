@@ -1,0 +1,178 @@
+.voter-navbar {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.voter-navbar-content {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 70px;
+}
+
+.voter-navbar-left {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+}
+
+.voter-brand-logo h2 {
+    color: white;
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.voter-tabs {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.voter-tab {
+    background: transparent;
+    border: none;
+    color: rgba(255, 255, 255, 0.8);
+    padding: 0.75rem 1.25rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.95rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    position: relative;
+}
+
+.voter-tab:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+}
+
+.voter-tab.active {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    font-weight: 600;
+}
+
+.voter-tab.active::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60%;
+    height: 3px;
+    background: white;
+    border-radius: 2px 2px 0 0;
+}
+
+.tab-icon {
+    font-size: 1.1rem;
+}
+
+.tab-label {
+    font-family: inherit;
+}
+
+.voter-navbar-right {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.status-badge {
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+}
+
+.status-badge.success {
+    background: rgba(76, 175, 80, 0.2);
+    color: #a5d6a7;
+    border-color: #a5d6a7;
+}
+
+.status-badge.warning {
+    background: rgba(255, 152, 0, 0.2);
+    color: #ffcc80;
+    border-color: #ffcc80;
+}
+
+.status-badge.error {
+    background: rgba(244, 67, 54, 0.2);
+    color: #ef9a9a;
+    border-color: #ef9a9a;
+}
+
+.logout-btn {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    padding: 0.5rem 1.25rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+
+.logout-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.5);
+    transform: translateY(-1px);
+}
+
+@media (max-width: 768px) {
+    .voter-navbar-content {
+        flex-direction: column;
+        height: auto;
+        padding: 1rem;
+        gap: 1rem;
+    }
+
+    .voter-navbar-left {
+        flex-direction: column;
+        width: 100%;
+        gap: 1rem;
+    }
+
+    .voter-brand-logo h2 {
+        font-size: 1.25rem;
+    }
+
+    .voter-tabs {
+        width: 100%;
+        justify-content: space-around;
+        overflow-x: auto;
+    }
+
+    .voter-tab {
+        flex-direction: column;
+        padding: 0.5rem 0.75rem;
+        font-size: 0.8rem;
+        min-width: fit-content;
+    }
+
+    .tab-icon {
+        font-size: 1.3rem;
+    }
+
+    .voter-navbar-right {
+        width: 100%;
+        justify-content: space-between;
+    }
+}

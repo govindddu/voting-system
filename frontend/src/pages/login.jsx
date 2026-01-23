@@ -31,7 +31,7 @@ function Login() {
                 navigate("/admin", { replace: true });
                 return;
             }
-            setMessage("Logged in successfully.");
+            navigate("/voter", { replace: true });
         } catch (err) {
             const msg = err.response?.data?.message || "Login failed. Please try again.";
             setError(msg);
@@ -49,6 +49,8 @@ function Login() {
                 const role = (user?.role || "").toUpperCase();
                 if (role === "ADMIN") {
                     navigate("/admin", { replace: true });
+                } else {
+                    navigate("/voter", { replace: true });
                 }
             } catch (_) {
                 // ignore parse errors

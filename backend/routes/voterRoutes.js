@@ -7,6 +7,8 @@ const uploadDocument = require("../middleware/uploadMiddleware");
 const {
     createVoterProfile,
     getMyVoterProfile,
+    updateMyVoterProfile,
+    getAllVoters,
     verifyVoter
 } = require("../controllers/voterController");
 
@@ -18,12 +20,14 @@ router.post(
     createVoterProfile
 );
 
+// ADMIN → list all voters
+router.get("/", protect, getAllVoters);
 
-
-
-
+// Auth user → get own voter profile
 router.get("/me", protect, getMyVoterProfile);
 
+// Auth user → update own voter profile
+router.put("/update", protect, uploadDocument.single("documentFile"), updateMyVoterProfile);
 
 // ADMIN → verify voter
 router.put("/:id/verify", protect, verifyVoter);
