@@ -114,9 +114,15 @@ function VoterHome() {
     };
 
     const fetchElections = async () => {
+        if (!token) {
+            setElectionsLoading(false);
+            return;
+        }
         setElectionsLoading(true);
         try {
-            const { data } = await axios.get(`${API_BASE}/elections`);
+            const { data } = await axios.get(`${API_BASE}/elections`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
             const raw = Array.isArray(data) ? data : data.elections || data.data || [];
             const now = new Date();
             const mapped = raw
@@ -125,12 +131,25 @@ function VoterHome() {
                     const startDate = details?.electionStart ? new Date(details.electionStart) : null;
                     const endDate = details?.electionEnd ? new Date(details.electionEnd) : null;
                     const regClose = details?.candidateRegistrationLastDate ? new Date(details.candidateRegistrationLastDate) : null;
+                    
+                    // Determine election status based on dates
+                    let computedStatus = details?.status || item.status || "DRAFT";
+                    if (startDate && endDate) {
+                        if (now < startDate) {
+                            computedStatus = "UPCOMING";
+                        } else if (now >= startDate && now <= endDate) {
+                            computedStatus = "ACTIVE";
+                        } else if (now > endDate) {
+                            computedStatus = "COMPLETED";
+                        }
+                    }
+                    
                     return {
                         id: details?._id || item._id || item.electionId || item.id,
                         title: details?.title || "Untitled Election",
                         description: details?.description || "No description provided.",
                         level: details?.level || "NATIONAL",
-                        status: details?.status || item.status || "DRAFT",
+                        status: computedStatus,
                         startDate,
                         endDate,
                         regClose,
@@ -138,9 +157,10 @@ function VoterHome() {
                         dbDetails: details
                     };
                 })
-                .filter((e) => {
-                    const regOpen = !e.regClose || e.regClose >= now;
-                    return e.status === "UPCOMING" && regOpen;
+                .sort((a, b) => {
+                    // Sort: Active > Upcoming > Completed
+                    const statusOrder = { "ACTIVE": 1, "UPCOMING": 2, "COMPLETED": 3, "DRAFT": 4 };
+                    return (statusOrder[a.status] || 5) - (statusOrder[b.status] || 5);
                 });
             setElections(mapped);
         } catch (err) {
@@ -552,8 +572,8 @@ function VoterHome() {
         <section className="panel">
             <div className="panel-header">
                 <div>
-                    <p className="eyebrow">Upcoming elections</p>
-                    <h2>Register as a candidate</h2>
+                    <p className="eyebrow">All elections</p>
+                    <h2>Elections & Candidate Registration</h2>
                 </div>
                 {!isVerified && <span className="pill subtle">Approval required to apply</span>}
             </div>
@@ -561,29 +581,61 @@ function VoterHome() {
             {electionsLoading ? (
                 <p className="muted">Loading elections...</p>
             ) : elections.length === 0 ? (
-                <p className="muted">No upcoming elections yet.</p>
+                <p className="muted">No elections available yet.</p>
             ) : (
                 <div className="election-grid">
-                    {elections.map((election) => (
-                        <div key={election.id} className="election-card">
-                            <div>
-                                <h4>{election.title}</h4>
-                                <p className="muted">{election.description}</p>
-                                <p className="muted small">Level: {election.level}</p>
-                                <p className="muted small">Registration closes: {election.regClose ? election.regClose.toLocaleString() : "N/A"}</p>
-                                <p className="muted small">Starts: {election.startDate ? election.startDate.toLocaleString() : "N/A"}</p>
+                    {elections.map((election) => {
+                        const isRegClosed = election.regClose && new Date() > election.regClose;
+                        const canRegister = isVerified && !isRegClosed && (election.status === "UPCOMING" || election.status === "ACTIVE");
+                        
+                        const getStatusColor = (status) => {
+                            switch(status) {
+                                case "ACTIVE": return "#28a745";
+                                case "UPCOMING": return "#007bff";
+                                case "COMPLETED": return "#6c757d";
+                                default: return "#ffc107";
+                            }
+                        };
+                        
+                        return (
+                            <div key={election.id} className="election-card">
+                                <div>
+                                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                                        <h4 style={{ margin: 0 }}>{election.title}</h4>
+                                        <span style={{
+                                            padding: "4px 12px",
+                                            borderRadius: "12px",
+                                            fontSize: "12px",
+                                            fontWeight: "600",
+                                            color: "#fff",
+                                            backgroundColor: getStatusColor(election.status)
+                                        }}>
+                                            {election.status}
+                                        </span>
+                                    </div>
+                                    <p className="muted">{election.description}</p>
+                                    <p className="muted small">Level: {election.level}</p>
+                                    {election.regClose && (
+                                        <p className="muted small" style={{ color: isRegClosed ? "#dc3545" : "#28a745" }}>
+                                            Registration {isRegClosed ? "closed" : "closes"}: {election.regClose.toLocaleString()}
+                                        </p>
+                                    )}
+                                    <p className="muted small">Starts: {election.startDate ? election.startDate.toLocaleString() : "N/A"}</p>
+                                    <p className="muted small">Ends: {election.endDate ? election.endDate.toLocaleString() : "N/A"}</p>
+                                </div>
+                                <div className="card-actions">
+                                    <button
+                                        className="primary-btn"
+                                        disabled={!canRegister}
+                                        onClick={() => openCandidateForm(election)}
+                                        title={!isVerified ? "Voter approval required" : isRegClosed ? "Registration closed" : canRegister ? "Click to register" : "Registration not available"}
+                                    >
+                                        {!isVerified ? "Get approval to apply" : isRegClosed ? "Registration closed" : canRegister ? "Register as candidate" : "Registration closed"}
+                                    </button>
+                                </div>
                             </div>
-                            <div className="card-actions">
-                                <button
-                                    className="primary-btn"
-                                    disabled={!isVerified || (election.regClose && new Date() > election.regClose)}
-                                    onClick={() => openCandidateForm(election)}
-                                >
-                                    {isVerified ? "Register as candidate" : "Get approval to apply"}
-                                </button>
-                            </div>
-                        </div>
-                    ))}
+                        );
+                    })}
                 </div>
             )}
 
