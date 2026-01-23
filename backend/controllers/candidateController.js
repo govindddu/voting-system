@@ -1,13 +1,13 @@
-import Candidate from "../models/Candidate.js";
-import Election from "../models/Election.js";
-import contract from "../Blockchain/contract.js";
-import User from "../models/User.js";
-
+const Candidate = require("../models/Candidate.js");
+const Election = require("../models/Election.js");
+const contract = require("../Blockchain/contract.js");
+const User = require("../models/User.js");
+const { decrypt } = require("../utils/encryption.js");
 
 // ==============================
 // CANDIDATE → Register Candidate
 // ==============================
-export const registerCandidate = async (req, res) => {
+const registerCandidate = async (req, res) => {
   try {
     // ✅ Allow USER / VOTER to apply for candidate
     if (!["USER", "VOTER", "CANDIDATE"].includes(req.user.role)) {
@@ -41,17 +41,22 @@ export const registerCandidate = async (req, res) => {
       return res.status(400).json({ message: "Already registered" });
     }
 
+    // ✅ Check private key encryption
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    if (!user.privateKey || !user.privateKeyEncrypted) {
+      return res.status(400).json({ message: "Private key not found. Please ensure your account was registered properly." });
+    }
+
     // 4️⃣ File validation
     if (!req.files || !req.files.documentFile) {
       return res.status(400).json({ message: "Document file is required" });
     }
 
     // ✅ 5️⃣ Upgrade role to CANDIDATE if not already
-    const user = await User.findById(req.user.id);
-
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
 
     if (user.role !== "CANDIDATE") {
       user.role = "CANDIDATE";
@@ -81,7 +86,7 @@ export const registerCandidate = async (req, res) => {
 // =====================================
 // ADMIN → Approve Candidate (Blockchain)
 // =====================================
-export const approveCandidate = async (req, res) => {
+const approveCandidate = async (req, res) => {
   try {
     if (req.user.role !== "ADMIN") {
       return res.status(403).json({ message: "Access denied" });
@@ -143,4 +148,9 @@ export const approveCandidate = async (req, res) => {
   } catch (err) {
     return res.status(500).json({ error: err.message });
   }
+};
+
+module.exports = {
+  registerCandidate,
+  approveCandidate
 };

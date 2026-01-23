@@ -1,12 +1,12 @@
-import contract from "../Blockchain/contract.js";
-import Election from "../models/Election.js";
+const contract = require("../Blockchain/contract.js");
+const Election = require("../models/Election.js");
 
 /**
  * @desc   Create Election (Blockchain + MongoDB)
  * @route  POST /api/elections
  * @access ADMIN
  */
-export const createElection = async (req, res) => {
+const createElection = async (req, res) => {
   try {
     // 🔐 Admin check
     if (req.user.role !== "ADMIN") {
@@ -72,7 +72,7 @@ export const createElection = async (req, res) => {
  * @route  GET /api/elections
  * @access PUBLIC
  */
-export const getAllElections = async (req, res) => {
+const getAllElections = async (req, res) => {
   try {
     // 1️⃣ Total elections from blockchain
     const total = await contract.electionCount();
@@ -110,4 +110,9 @@ export const getAllElections = async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
+};
+
+module.exports = {
+  createElection,
+  getAllElections
 };

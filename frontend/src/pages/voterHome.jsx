@@ -3,7 +3,9 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import VoterNavbar from "../components/VoterNavbar";
 
+
 const API_BASE = process.env.REACT_APP_API_BASE_URL || "http://localhost:5000/api";
+
 
 const defaultProfileForm = {
     voterId: "",
@@ -16,11 +18,13 @@ const defaultProfileForm = {
     documentType: "AADHAR"
 };
 
+
 const defaultCandidateForm = {
     partyName: "",
     manifesto: "",
     documentType: "AADHAR"
 };
+
 
 const statusBadge = (status) => {
     if (status === "VERIFIED") return { label: "Approved", tone: "success" };
@@ -29,9 +33,11 @@ const statusBadge = (status) => {
     return { label: "Profile missing", tone: "error" };
 };
 
+
 function VoterHome() {
     const token = useMemo(() => localStorage.getItem("token"), []);
     const navigate = useNavigate();
+
 
     const [activeTab, setActiveTab] = useState("profile");
     const [profile, setProfile] = useState(null);
@@ -42,6 +48,7 @@ function VoterHome() {
     const [documentFile, setDocumentFile] = useState(null);
     const [isEditingProfile, setIsEditingProfile] = useState(false);
 
+
     const [elections, setElections] = useState([]);
     const [electionsLoading, setElectionsLoading] = useState(true);
     const [candidateSelection, setCandidateSelection] = useState(null);
@@ -50,13 +57,16 @@ function VoterHome() {
     const [candidateSymbol, setCandidateSymbol] = useState(null);
     const [candidateMessage, setCandidateMessage] = useState({ type: "", text: "" });
 
+
     const [results, setResults] = useState([]);
     const [resultsLoading, setResultsLoading] = useState(false);
     const [pastVotes, setPastVotes] = useState([]);
     const [pastVotesLoading, setPastVotesLoading] = useState(false);
 
+
     const isVerified = profileStatus === "VERIFIED";
     const needsAttention = profileStatus !== "VERIFIED";
+
 
     const handleLogout = () => {
         localStorage.removeItem("token");
@@ -64,11 +74,13 @@ function VoterHome() {
         navigate("/login", { replace: true });
     };
 
+
     useEffect(() => {
         fetchProfile();
         fetchElections();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
+
 
     useEffect(() => {
         if (activeTab === "results") {
@@ -78,6 +90,7 @@ function VoterHome() {
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [activeTab]);
+
 
     const fetchProfile = async () => {
         if (!token) {
@@ -113,6 +126,7 @@ function VoterHome() {
         }
     };
 
+
     const fetchElections = async () => {
         if (!token) {
             setElectionsLoading(false);
@@ -131,7 +145,7 @@ function VoterHome() {
                     const startDate = details?.electionStart ? new Date(details.electionStart) : null;
                     const endDate = details?.electionEnd ? new Date(details.electionEnd) : null;
                     const regClose = details?.candidateRegistrationLastDate ? new Date(details.candidateRegistrationLastDate) : null;
-                    
+                   
                     // Determine election status based on dates
                     let computedStatus = details?.status || item.status || "DRAFT";
                     if (startDate && endDate) {
@@ -143,7 +157,7 @@ function VoterHome() {
                             computedStatus = "COMPLETED";
                         }
                     }
-                    
+                   
                     return {
                         id: details?._id || item._id || item.electionId || item.id,
                         title: details?.title || "Untitled Election",
@@ -170,6 +184,7 @@ function VoterHome() {
         }
     };
 
+
     const fetchResults = async () => {
         setResultsLoading(true);
         try {
@@ -195,6 +210,7 @@ function VoterHome() {
         }
     };
 
+
     const fetchPastVotes = async () => {
         if (!token) {
             setPastVotesLoading(false);
@@ -214,10 +230,12 @@ function VoterHome() {
         }
     };
 
+
     const handleProfileChange = (e) => {
         const { name, value } = e.target;
         setProfileForm((prev) => ({ ...prev, [name]: value }));
     };
+
 
     const handleProfileSubmit = async (e) => {
         e.preventDefault();
@@ -230,12 +248,14 @@ function VoterHome() {
             return;
         }
 
+
         const formData = new FormData();
         Object.entries(profileForm).forEach(([key, value]) => {
             if (key === "voterId" && !value) return; // let backend auto-generate
             formData.append(key, value);
         });
         formData.append("documentFile", documentFile);
+
 
         setProfileMessage({ type: "", text: "" });
         try {
@@ -255,12 +275,14 @@ function VoterHome() {
         }
     };
 
+
     const handleProfileUpdate = async (e) => {
         e.preventDefault();
         if (!token) {
             setProfileMessage({ type: "error", text: "Please sign in to update your profile." });
             return;
         }
+
 
         const formData = new FormData();
         Object.entries(profileForm).forEach(([key, value]) => {
@@ -271,6 +293,7 @@ function VoterHome() {
         if (documentFile) {
             formData.append("documentFile", documentFile);
         }
+
 
         setProfileMessage({ type: "", text: "" });
         try {
@@ -292,10 +315,12 @@ function VoterHome() {
         }
     };
 
+
     const handleEditProfile = () => {
         setIsEditingProfile(true);
         setProfileMessage({ type: "", text: "" });
     };
+
 
     const handleCancelEdit = () => {
         setIsEditingProfile(false);
@@ -316,6 +341,7 @@ function VoterHome() {
         }
     };
 
+
     const openCandidateForm = (election) => {
         setCandidateSelection(election);
         setCandidateForm(defaultCandidateForm);
@@ -323,6 +349,7 @@ function VoterHome() {
         setCandidateSymbol(null);
         setCandidateMessage({ type: "", text: "" });
     };
+
 
     const handleCandidateSubmit = async (e) => {
         e.preventDefault();
@@ -336,6 +363,7 @@ function VoterHome() {
         }
         if (!candidateSelection) return;
 
+
         const now = new Date();
         if (candidateSelection.regClose && now > candidateSelection.regClose) {
             setCandidateMessage({ type: "error", text: "Registration has closed for this election." });
@@ -346,6 +374,7 @@ function VoterHome() {
             return;
         }
 
+
         const formData = new FormData();
         formData.append("electionId", candidateSelection.dbDetails?._id || candidateSelection.id);
         formData.append("partyName", candidateForm.partyName);
@@ -355,6 +384,7 @@ function VoterHome() {
         if (candidateSymbol) {
             formData.append("symbol", candidateSymbol);
         }
+
 
         setCandidateMessage({ type: "", text: "" });
         try {
@@ -373,9 +403,12 @@ function VoterHome() {
         }
     };
 
+
     const badge = statusBadge(profileStatus);
 
+
     const redDotClass = needsAttention ? "status-dot danger" : "status-dot success";
+
 
     const renderProfileTab = () => (
         <>
@@ -388,11 +421,13 @@ function VoterHome() {
                     {needsAttention && <span className="pill subtle">Action needed</span>}
                 </div>
 
+
                 {profileMessage.text && (
                     <div className={`status ${profileMessage.type === "error" ? "error" : "success"}`}>
                         {profileMessage.text}
                     </div>
                 )}
+
 
                 {profileStatus === "REJECTED" && profile?.remarks && (
                     <div className="notice error">Rejected: {profile.remarks}</div>
@@ -400,6 +435,7 @@ function VoterHome() {
                 {profileStatus === "PENDING" && (
                     <div className="notice warning">Your profile is under review. You can still edit and resubmit if needed.</div>
                 )}
+
 
                 {profileLoading ? (
                     <p className="muted">Loading profile...</p>
@@ -560,6 +596,7 @@ function VoterHome() {
                 )}
             </section>
 
+
             {!isVerified && (
                 <section className="notice info">
                     You cannot vote or apply as a candidate until your voter profile is approved by an admin.
@@ -567,6 +604,7 @@ function VoterHome() {
             )}
         </>
     );
+
 
     const renderElectionsTab = () => (
         <section className="panel">
@@ -578,6 +616,7 @@ function VoterHome() {
                 {!isVerified && <span className="pill subtle">Approval required to apply</span>}
             </div>
 
+
             {electionsLoading ? (
                 <p className="muted">Loading elections...</p>
             ) : elections.length === 0 ? (
@@ -587,7 +626,7 @@ function VoterHome() {
                     {elections.map((election) => {
                         const isRegClosed = election.regClose && new Date() > election.regClose;
                         const canRegister = isVerified && !isRegClosed && (election.status === "UPCOMING" || election.status === "ACTIVE");
-                        
+                       
                         const getStatusColor = (status) => {
                             switch(status) {
                                 case "ACTIVE": return "#28a745";
@@ -596,7 +635,7 @@ function VoterHome() {
                                 default: return "#ffc107";
                             }
                         };
-                        
+                       
                         return (
                             <div key={election.id} className="election-card">
                                 <div>
@@ -639,6 +678,7 @@ function VoterHome() {
                 </div>
             )}
 
+
             {candidateSelection && (
                 <div className="panel soft">
                     <div className="panel-header">
@@ -650,11 +690,13 @@ function VoterHome() {
                         <button className="ghost-btn" onClick={() => setCandidateSelection(null)}>Close</button>
                     </div>
 
+
                     {candidateMessage.text && (
                         <div className={`status ${candidateMessage.type === "error" ? "error" : "success"}`}>
                             {candidateMessage.text}
                         </div>
                     )}
+
 
                     <form className="admin-form" onSubmit={handleCandidateSubmit}>
                         <div className="form-grid">
@@ -698,6 +740,7 @@ function VoterHome() {
         </section>
     );
 
+
     const renderResultsTab = () => (
         <section className="panel">
             <div className="panel-header">
@@ -706,6 +749,7 @@ function VoterHome() {
                     <h2>Results</h2>
                 </div>
             </div>
+
 
             {resultsLoading ? (
                 <p className="muted">Loading results...</p>
@@ -730,6 +774,7 @@ function VoterHome() {
         </section>
     );
 
+
     const renderPastVotesTab = () => (
         <section className="panel">
             <div className="panel-header">
@@ -738,6 +783,7 @@ function VoterHome() {
                     <h2>Past Votes</h2>
                 </div>
             </div>
+
 
             {!isVerified ? (
                 <div className="notice warning">
@@ -770,6 +816,7 @@ function VoterHome() {
         </section>
     );
 
+
     return (
         <div className="voter-shell">
             <VoterNavbar
@@ -778,6 +825,7 @@ function VoterHome() {
                 badge={badge}
                 onLogout={handleLogout}
             />
+
 
             <div className="voter-content">
                 {activeTab === "profile" && renderProfileTab()}
@@ -789,4 +837,9 @@ function VoterHome() {
     );
 }
 
+
 export default VoterHome;
+
+
+
+

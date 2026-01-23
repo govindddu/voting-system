@@ -13,7 +13,8 @@ function Register() {
         email: "",
         phoneNumber: "",
         role: "VOTER",
-        password: ""
+        password: "",
+        privateKey: ""
     });
 
     const [loading, setLoading] = useState(false);
@@ -40,7 +41,8 @@ function Register() {
                     email: form.email,
                     phoneNumber: form.phoneNumber,
                     role: form.role,
-                    password: form.password
+                    password: form.password,
+                    privateKey: form.privateKey
                 },
                 {
                     headers: {
@@ -124,6 +126,21 @@ function Register() {
                         onChange={handleChange}
                         required
                     />
+                </label>
+
+                <label>
+                    Private Key
+                    <input
+                        type="text"
+                        name="privateKey"
+                        placeholder="64 hexadecimal characters"
+                        value={form.privateKey}
+                        onChange={handleChange}
+                        required
+                    />
+                    <p className="muted small" style={{ marginTop: "4px" }}>
+                        ⚠️ Enter your 64-character hexadecimal private key. This will be encrypted and cannot be changed after registration.
+                    </p>
                 </label>
 
                 <button type="submit" disabled={loading}>

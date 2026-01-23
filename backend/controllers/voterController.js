@@ -209,11 +209,75 @@ const verifyVoter = async (req, res) => {
   }
 };
 
+/**
+ * @desc   Get Available Elections for Voter (Blockchain + MongoDB)
+ * @route  GET /api/voters/available-elections
+ * @access PUBLIC
+ * @purpose Fetch all elections from blockchain, enrich with MongoDB details
+ */
+const getAvailableElections = async (req, res) => {
+  try {
+    console.log("Fetching available elections for voter dashboard...");
+
+    // 1️⃣ Get total elections from blockchain
+    const total = await contract.electionCount();
+    console.log(`Total elections on blockchain: ${total}`);
+
+    const elections = [];
+
+    // 2️⃣ Loop through each blockchain election
+    for (let i = 1; i <= Number(total); i++) {
+      try {
+        // Get blockchain data (source of truth)
+        const chainElection = await contract.elections(i);
+
+        // Get MongoDB details
+        const dbElection = await Election.findOne({ electionId: i })
+          .lean(); // Use lean for better performance
+
+        // Only include elections that exist in both blockchain and MongoDB
+        if (dbElection) {
+          elections.push({
+            electionId: i,
+            blockchain: {
+              startTime: Number(chainElection.startTime),
+              endTime: Number(chainElection.endTime),
+              isActive: chainElection.isActive
+            },
+            details: dbElection
+          });
+        }
+      } catch (err) {
+        console.warn(`Error fetching election ${i}:`, err.message);
+        // Continue to next election if there's an error
+        continue;
+      }
+    }
+
+    console.log(`Returning ${elections.length} elections for voter dashboard`);
+
+    return res.json({
+      total: elections.length,
+      elections,
+      timestamp: new Date().toISOString()
+    });
+
+  } catch (err) {
+    console.error("GET_AVAILABLE_ELECTIONS_ERROR", err);
+    return res.status(500).json({
+      message: err.message || "Could not fetch elections",
+      elections: [],
+      total: 0
+    });
+  }
+};
+
 module.exports = {
   createVoterProfile,
   getMyVoterProfile,
   updateMyVoterProfile,
   getAllVoters,
-  verifyVoter
+  verifyVoter,
+  getAvailableElections
 };
 
