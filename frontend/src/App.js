@@ -1,8 +1,10 @@
 import React from "react";
 import { BrowserRouter, Routes, Route, Navigate, Link, useLocation } from "react-router-dom";
-import Login from "./pages/login";
-import Register from "./pages/register";
-import AdminHome from "./pages/adminHome";
+import Login from "./pages/login.jsx";
+import Register from "./pages/register.jsx";
+import AdminHome from "./pages/adminHome.jsx";
+import VoterVerification from "./pages/voterVerification.jsx";
+import VoterHome from "./pages/voterHome.jsx";
 import "./App.css";
 
 const AuthLayout = () => (
@@ -40,6 +42,8 @@ const AuthLayout = () => (
 const MainLayout = () => (
   <Routes>
     <Route path="/admin" element={<AdminHome />} />
+    <Route path="/admin/voters" element={<VoterVerification />} />
+    <Route path="/voter" element={<VoterHome />} />
     <Route path="*" element={<Navigate to="/login" replace />} />
   </Routes>
 );

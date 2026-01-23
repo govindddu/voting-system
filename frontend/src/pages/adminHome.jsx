@@ -49,12 +49,15 @@ function AdminHome() {
                     Authorization: `Bearer ${token}`
                 }
             });
-            setElections(data);
+            // Handle both direct array response and nested data structure
+            const electionsArray = Array.isArray(data) ? data : (data.data || data.elections || []);
+            setElections(electionsArray);
         } catch (err) {
             setStatus({
                 type: "error",
                 message: err.response?.data?.message || "Could not load elections."
             });
+            setElections([]);
         } finally {
             setListLoading(false);
         }
@@ -139,8 +142,9 @@ function AdminHome() {
                     </div>
                 </div>
                 <div className="top-actions">
-                    <button className="ghost-btn" onClick={handleLogout}>Log out</button>
+                    <Link className="ghost-btn" to="/admin/voters">Voter verification</Link>
                     <Link className="primary-btn" to="/register">Invite admin</Link>
+                    <button className="ghost-btn" onClick={handleLogout}>Log out</button>
                 </div>
             </header>
 
@@ -293,21 +297,30 @@ function AdminHome() {
                     <p className="muted">No elections yet. Draft one above to get started.</p>
                 ) : (
                     <div className="election-list">
-                        {elections.map((election) => (
-                            <div key={election._id} className="election-row">
-                                <div>
-                                    <h4>{election.title}</h4>
-                                    <p className="muted">{election.description || "No description provided."}</p>
-                                    <p className="muted small">Level: {election.level}</p>
+                        {elections.map((election) => {
+                            const details = election.details || election;
+                            const title = details.title || "Untitled Election";
+                            const description = details.description || "No description provided.";
+                            const level = details.level || "NATIONAL";
+                            const status = details.status || "DRAFT";
+                            const startDate = details.electionStart ? new Date(details.electionStart).toLocaleString() : "Invalid Date";
+
+                            return (
+                                <div key={election._id || election.electionId} className="election-row">
+                                    <div>
+                                        <h4>{title}</h4>
+                                        <p className="muted">{description}</p>
+                                        <p className="muted small">Level: {level}</p>
+                                    </div>
+                                    <div className="row-meta">
+                                        <span className={`pill ${status === "DRAFT" ? "subtle" : status === "UPCOMING" ? "success" : ""}`}>
+                                            {status}
+                                        </span>
+                                        <p className="muted small">Starts {startDate}</p>
+                                    </div>
                                 </div>
-                                <div className="row-meta">
-                                    <span className={`pill ${election.status === "DRAFT" ? "subtle" : election.status === "UPCOMING" ? "success" : ""}`}>
-                                        {election.status}
-                                    </span>
-                                    <p className="muted small">Starts {new Date(election.electionStart).toLocaleString()}</p>
-                                </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 )}
             </section>

@@ -31,6 +31,12 @@ app.use(
   express.static(path.join(__dirname, "uploads"))
 );
 
+// Serve D:/mysy directory for legacy document paths
+app.use(
+  "/documents",
+  express.static("D:/mysy")
+);
+
 app.use("/api/auth", authRoutes);
 app.use("/api/voters", voterRoutes);
 app.use("/api/elections", electionRoutes);
