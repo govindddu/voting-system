@@ -1,6 +1,7 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
+const { encrypt, decrypt } = require("../utils/encryption");
 
 /**
  * @desc Register new user
@@ -12,13 +13,19 @@ const registerUser = async (req, res) => {
 
 
 
-    const { fullName, email, phoneNumber, password, role } = req.body;
-    console.log("Register request received:", { fullName, email, phoneNumber, role });
+    const { fullName, email, phoneNumber, password, role, privateKey } = req.body;
+    console.log("Register request received:", { fullName, email, phoneNumber, role, hasPrivateKey: !!privateKey });
 
     // Validate required fields
-    if (!fullName || !email || !phoneNumber || !password || !role) {
-      console.log("Missing required fields:", { fullName, email, phoneNumber, password, role });
-      return res.status(400).json({ message: "All fields are required" });
+    if (!fullName || !email || !phoneNumber || !password || !role || !privateKey) {
+      console.log("Missing required fields");
+      return res.status(400).json({ message: "All fields including private key are required" });
+    }
+
+    // Validate private key format (should be 64 hex characters for secp256k1)
+    const privateKeyRegex = /^[a-fA-F0-9]{64}$/;
+    if (!privateKeyRegex.test(privateKey)) {
+      return res.status(400).json({ message: "Invalid private key format. Must be 64 hexadecimal characters." });
     }
 
     // Check existing user
@@ -31,12 +38,17 @@ const registerUser = async (req, res) => {
     // Hash password
     const passwordHash = await bcrypt.hash(password, 10);
 
+    // Encrypt private key
+    const encryptedPrivateKey = encrypt(privateKey);
+
     const user = await User.create({
       fullName,
       email,
       phoneNumber,
       passwordHash,
       role,
+      privateKey: encryptedPrivateKey,
+      privateKeyEncrypted: true
     });
 
     console.log("User registered successfully:", user._id);
@@ -81,6 +93,7 @@ const loginUser = async (req, res) => {
         fullName: user.fullName,
         email: user.email,
         role: user.role,
+        privateKeyEncrypted: user.privateKeyEncrypted
       },
     });
   } catch (error) {

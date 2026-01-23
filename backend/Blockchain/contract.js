@@ -1,20 +1,13 @@
-import { ethers } from "ethers";
-import dotenv from "dotenv";
-import fs from "fs";
-import path from "path";
-import { fileURLToPath } from "url";
+const { ethers } = require("ethers");
+require("dotenv").config();
+const fs = require("fs");
+const path = require("path");
 
-dotenv.config();
-
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-// ---------- Load ABI ----------
+// Load ABI
 const abiPath = path.join(__dirname, "..", "contracts", "VotingSystem.json");
 const ABI = JSON.parse(fs.readFileSync(abiPath, "utf8"));
 
-// ---------- Provider ----------
+// Provider
 const provider = new ethers.JsonRpcProvider(
   process.env.RPC_URL,
   {
@@ -23,17 +16,17 @@ const provider = new ethers.JsonRpcProvider(
   }
 );
 
-// ---------- Signer (ADMIN wallet) ----------
+// Signer (ADMIN wallet)
 const signer = new ethers.Wallet(
   process.env.PRIVATE_KEY,
   provider
 );
 
-// ---------- Contract Instance ----------
+// Contract Instance
 const contract = new ethers.Contract(
   process.env.CONTRACT_ADDRESS,
   ABI,
   signer
 );
 
-export default contract;
+module.exports = contract;

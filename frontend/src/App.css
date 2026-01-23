@@ -776,6 +776,14 @@ a:hover {
   background: rgba(245, 158, 11, 0.08);
 }
 
+.notice.subtle {
+  border-color: var(--bg-tertiary);
+  background: var(--bg-secondary);
+  color: var(--muted);
+  padding: 20px;
+  text-align: center;
+}
+
 .profile-summary {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -799,28 +807,114 @@ a:hover {
 
 .election-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 14px;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+  margin-top: 20px;
 }
 
 .election-card {
   border: 2px solid var(--border);
   background: var(--panel);
-  border-radius: var(--radius-sm);
-  padding: 16px;
+  border-radius: var(--radius);
+  padding: 24px;
   box-shadow: var(--shadow-sm);
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 16px;
+  transition: all 0.3s ease;
+
+  hover: {
+    box-shadow: var(--shadow);
+    transform: translateY(-4px);
+    border-color: var(--accent);
+  }
+}
+
+.election-card:hover {
+  box-shadow: var(--shadow);
+  transform: translateY(-4px);
+  border-color: var(--accent);
+}
+
+.election-card h4 {
+  margin: 0;
+  color: var(--text);
+  font-size: 1.2rem;
+}
+
+.election-card .pill {
+  width: fit-content;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.election-card .pill.primary {
+  background: var(--accent-light);
+  color: white;
+}
+
+.election-card .pill.subtle {
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
 }
 
 .card-actions {
   display: flex;
+  gap: 12px;
   justify-content: flex-end;
+  margin-top: 12px;
+}
+
+.card-actions button {
+  flex: 1;
+  min-height: 44px;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 0.95rem;
+}
+
+.primary-btn {
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-light) 100%);
+  color: white;
+  box-shadow: 0 4px 12px rgba(45, 143, 95, 0.3);
+}
+
+.primary-btn:hover:not(:disabled) {
+  box-shadow: 0 6px 20px rgba(45, 143, 95, 0.4);
+  transform: translateY(-2px);
+}
+
+.primary-btn:disabled {
+  background: var(--bg-secondary);
+  color: var(--muted);
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.ghost-btn {
+  background: transparent;
+  color: var(--accent);
+  border: 2px solid var(--accent);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.ghost-btn:hover {
+  background: var(--accent);
+  color: white;
 }
 
 .panel.soft {
-  margin-top: 16px;
+  margin-top: 24px;
   background: linear-gradient(135deg, var(--panel) 0%, rgba(45, 143, 95, 0.04) 100%);
 }
 

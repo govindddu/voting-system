@@ -9,8 +9,12 @@ const {
     getMyVoterProfile,
     updateMyVoterProfile,
     getAllVoters,
-    verifyVoter
+    verifyVoter,
+    getAvailableElections
 } = require("../controllers/voterController");
+
+// PUBLIC → get all available elections (voter dashboard)
+router.get("/elections/available", getAvailableElections);
 
 // CREATE voter (POST)
 router.post(

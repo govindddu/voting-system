@@ -1,20 +1,22 @@
-import contract from "../Blockchain/contract.js";
-import Election from "../models/Election.js";
-import Candidate from "../models/Candidate.js";
-import Vote from "../models/vote.js";
-import Voter from "../models/Voter.js";
+const contract = require("../Blockchain/contract.js");
+const Election = require("../models/Election.js");
+const Candidate = require("../models/Candidate.js");
+const Vote = require("../models/vote.js");
+const Voter = require("../models/Voter.js");
+const User = require("../models/User.js");
+const { decrypt } = require("../utils/encryption.js");
 
-import { ethers } from "ethers";
+const { ethers } = require("ethers");
 
-export const castVote = async (req, res) => {
+const castVote = async (req, res) => {
   try {
     const userId = req.user.id;
 
-    const { electionMongoId, candidateMongoId, voterPrivateKey } = req.body;
+    const { electionMongoId, candidateMongoId } = req.body;
 
-    if (!electionMongoId || !candidateMongoId || !voterPrivateKey) {
+    if (!electionMongoId || !candidateMongoId) {
       return res.status(400).json({
-        message: "electionMongoId, candidateMongoId, voterPrivateKey are required"
+        message: "electionMongoId and candidateMongoId are required"
       });
     }
 
@@ -22,6 +24,24 @@ export const castVote = async (req, res) => {
     const voter = await Voter.findOne({ userId });
     if (!voter) {
       return res.status(404).json({ message: "Voter profile not found" });
+    }
+
+    // ✅ Check private key encryption
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    if (!user.privateKey || !user.privateKeyEncrypted) {
+      return res.status(400).json({ message: "Private key not found. Please ensure your account was registered properly." });
+    }
+
+    // Decrypt private key
+    let decryptedPrivateKey;
+    try {
+      decryptedPrivateKey = decrypt(user.privateKey);
+    } catch (err) {
+      return res.status(500).json({ message: "Failed to decrypt private key" });
     }
 
     // 2️⃣ Only VERIFIED voter can vote
@@ -64,9 +84,9 @@ export const castVote = async (req, res) => {
       return res.status(400).json({ message: "Already voted (DB check)" });
     }
 
-    // 6️⃣ Create voter signer using private key (TESTING ONLY)
+    // 6️⃣ Create voter signer using private key
     const provider = contract.runner.provider;
-    const voterSigner = new ethers.Wallet(voterPrivateKey, provider);
+    const voterSigner = new ethers.Wallet(decryptedPrivateKey, provider);
 
     const voterContract = contract.connect(voterSigner);
 
@@ -79,17 +99,13 @@ export const castVote = async (req, res) => {
 
     await tx.wait();
 
-    // 8️⃣ Save tx hash in DB (optional)
+    // 8️⃣ Save tx hash in DB
     const vote = await Vote.create({
       voterId: voter._id,
       electionId: election._id,
       candidateId: candidate._id,
       blockchainTx: tx.hash
     });
-
-    // 9️⃣ Store voter wallet address (optional)
-    voter.walletAddress = voterSigner.address;
-    await voter.save();
 
     return res.status(201).json({
       message: "Vote cast successfully",
@@ -100,4 +116,8 @@ export const castVote = async (req, res) => {
   } catch (err) {
     return res.status(500).json({ error: err.message });
   }
+};
+
+module.exports = {
+  castVote
 };
