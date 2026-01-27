@@ -5,7 +5,8 @@ const uploadDocument = require("../middleware/uploadMiddleware"); // <-- your mu
 
 const {
   registerCandidate,
-  approveCandidate
+  approveCandidate,
+  getCandidatesByElection
 } = require("../controllers/candidateController");
 
 // ✅ CANDIDATE → register for election (multipart/form-data)
@@ -21,5 +22,7 @@ router.post(
 
 // ADMIN → approve / reject candidate
 router.put("/:id/approve", auth, approveCandidate);
+router.get("/election/:electionMongoId", auth, getCandidatesByElection);
+
 
 module.exports = router;

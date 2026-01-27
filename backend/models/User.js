@@ -30,16 +30,6 @@ const userSchema = new mongoose.Schema({
     required: true
   },
 
-  privateKey: {
-    type: String,
-    trim: true,
-    sparse: true
-  },
-
-  privateKeyEncrypted: {
-    type: Boolean,
-    default: false
-  },
 
   createdAt: {
     type: Date,

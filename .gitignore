@@ -20,3 +20,5 @@ Thumbs.db
 uploads/
 
 backend/contracts/VotingSystem.json
+
+frontend/src/blockchain

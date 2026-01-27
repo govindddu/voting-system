@@ -9,58 +9,36 @@ const { encrypt, decrypt } = require("../utils/encryption");
  */
 const registerUser = async (req, res) => {
   try {
+    const { fullName, email, phoneNumber, password, role } = req.body;
 
-
-
-
-    const { fullName, email, phoneNumber, password, role, privateKey } = req.body;
-    console.log("Register request received:", { fullName, email, phoneNumber, role, hasPrivateKey: !!privateKey });
-
-    // Validate required fields
-    if (!fullName || !email || !phoneNumber || !password || !role || !privateKey) {
-      console.log("Missing required fields");
-      return res.status(400).json({ message: "All fields including private key are required" });
+    if (!fullName || !email || !phoneNumber || !password || !role) {
+      return res.status(400).json({ message: "All fields are required" });
     }
 
-    // Validate private key format (should be 64 hex characters for secp256k1)
-    const privateKeyRegex = /^[a-fA-F0-9]{64}$/;
-    if (!privateKeyRegex.test(privateKey)) {
-      return res.status(400).json({ message: "Invalid private key format. Must be 64 hexadecimal characters." });
-    }
-
-    // Check existing user
     const existingUser = await User.findOne({ email });
     if (existingUser) {
-      console.log("User already exists:", email);
       return res.status(400).json({ message: "User already exists" });
     }
 
-    // Hash password
     const passwordHash = await bcrypt.hash(password, 10);
-
-    // Encrypt private key
-    const encryptedPrivateKey = encrypt(privateKey);
 
     const user = await User.create({
       fullName,
       email,
       phoneNumber,
       passwordHash,
-      role,
-      privateKey: encryptedPrivateKey,
-      privateKeyEncrypted: true
+      role
     });
 
-    console.log("User registered successfully:", user._id);
-    res.status(201).json({
+    return res.status(201).json({
       message: "User registered successfully",
-      userId: user._id,
+      userId: user._id
     });
   } catch (error) {
-    console.error("Register error:", error.message, error.stack);
-    res.status(500).json({ message: error.message });
+    return res.status(500).json({ message: error.message });
   }
 };
+
 
 /**
  * @desc Login user

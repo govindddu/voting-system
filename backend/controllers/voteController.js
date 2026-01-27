@@ -12,7 +12,7 @@ const castVote = async (req, res) => {
   try {
     const userId = req.user.id;
 
-    const { electionMongoId, candidateMongoId } = req.body;
+    const { electionMongoId, candidateMongoId, voterPrivateKey } = req.body;
 
     if (!electionMongoId || !candidateMongoId) {
       return res.status(400).json({
@@ -20,61 +20,37 @@ const castVote = async (req, res) => {
       });
     }
 
-    // 1️⃣ Check voter profile
+    // 1️⃣ voter profile check
     const voter = await Voter.findOne({ userId });
     if (!voter) {
       return res.status(404).json({ message: "Voter profile not found" });
     }
 
-    // ✅ Check private key encryption
-    const user = await User.findById(userId);
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    if (!user.privateKey || !user.privateKeyEncrypted) {
-      return res.status(400).json({ message: "Private key not found. Please ensure your account was registered properly." });
-    }
-
-    // Decrypt private key
-    let decryptedPrivateKey;
-    try {
-      decryptedPrivateKey = decrypt(user.privateKey);
-    } catch (err) {
-      return res.status(500).json({ message: "Failed to decrypt private key" });
-    }
-
-    // 2️⃣ Only VERIFIED voter can vote
     if (voter.status !== "VERIFIED") {
       return res.status(403).json({ message: "Voter is not verified" });
     }
 
-    // 3️⃣ Check election in DB
+    // 2️⃣ election check
     const election = await Election.findById(electionMongoId);
-    if (!election) {
-      return res.status(404).json({ message: "Election not found" });
-    }
+    if (!election) return res.status(404).json({ message: "Election not found" });
 
     if (!election.electionId) {
       return res.status(400).json({ message: "Election blockchain id missing" });
     }
 
-    // 4️⃣ Check candidate in DB
+    // 3️⃣ candidate check
     const candidate = await Candidate.findById(candidateMongoId);
-    if (!candidate) {
-      return res.status(404).json({ message: "Candidate not found" });
-    }
+    if (!candidate) return res.status(404).json({ message: "Candidate not found" });
 
     if (!candidate.blockchainCandidateId) {
       return res.status(400).json({ message: "Candidate blockchain id missing" });
     }
 
-    // Candidate must belong to same election
     if (String(candidate.electionId) !== String(election._id)) {
       return res.status(400).json({ message: "Candidate not in this election" });
     }
 
-    // 5️⃣ Prevent double vote in MongoDB (extra safety)
+    // 4️⃣ prevent double vote in DB
     const alreadyVoted = await Vote.findOne({
       voterId: voter._id,
       electionId: election._id
@@ -84,13 +60,30 @@ const castVote = async (req, res) => {
       return res.status(400).json({ message: "Already voted (DB check)" });
     }
 
-    // 6️⃣ Create voter signer using private key
-    const provider = contract.runner.provider;
-    const voterSigner = new ethers.Wallet(decryptedPrivateKey, provider);
+    // ✅ 5️⃣ Get private key (Postman OR DB)
+    let pk = voterPrivateKey;
 
+    if (!pk) {
+      const user = await User.findById(userId);
+
+      if (!user || !user.privateKey || !user.privateKeyEncrypted) {
+        return res.status(400).json({
+          message: "Private key not found. Send voterPrivateKey for testing."
+        });
+      }
+
+      pk = decrypt(user.privateKey);
+    }
+
+    // allow "0x"
+    if (!pk.startsWith("0x")) pk = "0x" + pk;
+
+    // 6️⃣ create voter signer
+    const provider = contract.runner.provider;
+    const voterSigner = new ethers.Wallet(pk, provider);
     const voterContract = contract.connect(voterSigner);
 
-    // 7️⃣ Call blockchain vote()
+    // 7️⃣ blockchain vote
     const tx = await voterContract.vote(
       Number(election.electionId),
       Number(candidate.blockchainCandidateId),
@@ -99,7 +92,7 @@ const castVote = async (req, res) => {
 
     await tx.wait();
 
-    // 8️⃣ Save tx hash in DB
+    // 8️⃣ save vote in DB
     const vote = await Vote.create({
       voterId: voter._id,
       electionId: election._id,
@@ -117,7 +110,6 @@ const castVote = async (req, res) => {
     return res.status(500).json({ error: err.message });
   }
 };
-
 module.exports = {
   castVote
 };

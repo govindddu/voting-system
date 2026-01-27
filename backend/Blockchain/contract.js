@@ -28,5 +28,8 @@ const contract = new ethers.Contract(
   ABI,
   signer
 );
+console.log("RPC_URL:", process.env.RPC_URL);
+console.log("CONTRACT_ADDRESS:", process.env.CONTRACT_ADDRESS);
+console.log("PRIVATE_KEY exists:", !!process.env.PRIVATE_KEY);
 
 module.exports = contract;

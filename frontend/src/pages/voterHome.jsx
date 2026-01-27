@@ -2,13 +2,15 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import VoterNavbar from "../components/VoterNavbar";
+import { getContract } from "../blockchain/contract";
+import { ethers } from "ethers";
 
 
 const API_BASE = process.env.REACT_APP_API_BASE_URL || "http://localhost:5000/api";
 
 
 const defaultProfileForm = {
-    voterId: "",
+    walletAddress: "",
     dateOfBirth: "",
     gender: "Male",
     address: "",
@@ -26,15 +28,9 @@ const defaultCandidateForm = {
 };
 
 
-const statusBadge = (status) => {
-    if (status === "VERIFIED") return { label: "Approved", tone: "success" };
-    if (status === "REJECTED") return { label: "Rejected", tone: "error" };
-    if (status === "PENDING") return { label: "Pending review", tone: "warning" };
-    return { label: "Profile missing", tone: "error" };
-};
 
 
-function VoterHome() {
+ function VoterHome() {
     const token = useMemo(() => localStorage.getItem("token"), []);
     const navigate = useNavigate();
 
@@ -62,7 +58,22 @@ function VoterHome() {
     const [resultsLoading, setResultsLoading] = useState(false);
     const [pastVotes, setPastVotes] = useState([]);
     const [pastVotesLoading, setPastVotesLoading] = useState(false);
+    const [walletAddress, setWalletAddress] = useState("");
+    const [walletConnected, setWalletConnected] = useState(false);
+    const [walletError, setWalletError] = useState("");
 
+    const [voteSelection, setVoteSelection] = useState(null);
+    const [voteCandidates, setVoteCandidates] = useState([]);
+    const [voteLoading, setVoteLoading] = useState(false);
+    const [voteMessage, setVoteMessage] = useState({ type: "", text: "" });
+
+
+    const statusBadge = (status) => {
+        if (status === "VERIFIED") return { label: "Approved", tone: "success" };
+        if (status === "REJECTED") return { label: "Rejected", tone: "error" };
+        if (status === "PENDING") return { label: "Pending review", tone: "warning" };
+        return { label: "Profile missing", tone: "error" };
+    };
 
     const isVerified = profileStatus === "VERIFIED";
     const needsAttention = profileStatus !== "VERIFIED";
@@ -78,8 +89,26 @@ function VoterHome() {
     useEffect(() => {
         fetchProfile();
         fetchElections();
+        
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
+    useEffect(() => {
+  const checkNetwork = async () => {
+    if (!window.ethereum) {
+      console.log("MetaMask not found");
+      return;
+    }
+
+    const provider = new ethers.BrowserProvider(window.ethereum);
+    const network = await provider.getNetwork();
+
+    console.log("Connected Network:", network);
+    console.log("Chain ID:", network.chainId.toString());
+  };
+
+  checkNetwork();
+}, []);
+
 
 
     useEffect(() => {
@@ -90,6 +119,93 @@ function VoterHome() {
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [activeTab]);
+
+    const connectWallet = async () => {
+        try {
+            setWalletError("");
+
+            if (!window.ethereum) {
+                setWalletError("MetaMask not installed");
+                return;
+            }
+
+            const accounts = await window.ethereum.request({
+                method: "eth_requestAccounts",
+            });
+
+            setWalletAddress(accounts[0]);
+            setWalletConnected(true);
+        } catch (err) {
+            setWalletError(err.message);
+        }
+    };
+
+    const openVotePanel = async (election) => {
+        try {
+            setVoteSelection(election);
+            setVoteMessage({ type: "", text: "" });
+            setVoteLoading(true);
+
+            // Fetch candidates for this election (status: VERIFIED)
+            const res = await axios.get(
+                `${API_BASE}/candidates/election/${election.id}`,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
+
+            setVoteCandidates(res.data.candidates || []);
+        } catch (err) {
+            setVoteMessage({
+                type: "error",
+                text: err.response?.data?.message || err.message,
+            });
+        } finally {
+            setVoteLoading(false);
+        }
+    };
+
+    const handleVote = async (candidate) => {
+        try {
+            setVoteMessage({ type: "", text: "" });
+
+            if (!walletConnected) {
+                setVoteMessage({ type: "error", text: "Please connect MetaMask first" });
+                return;
+            }
+
+            if (!voteSelection?.blockchainElectionId) {
+                setVoteMessage({ type: "error", text: "Blockchain electionId missing" });
+                return;
+            }
+
+            if (!candidate.blockchainCandidateId) {
+                setVoteMessage({ type: "error", text: "Candidate blockchainCandidateId missing" });
+                return;
+            }
+
+            const contract = await getContract();
+
+            const tx = await contract.vote(
+                Number(voteSelection.blockchainElectionId),
+                Number(candidate.blockchainCandidateId)
+            );
+
+            setVoteMessage({ type: "success", text: "Transaction sent: " + tx.hash });
+
+            await tx.wait();
+
+            setVoteMessage({ type: "success", text: "✅ Vote successful! Tx: " + tx.hash });
+        } catch (err) {
+            console.error(err);
+            setVoteMessage({
+                type: "error",
+                text: err?.reason || err?.info?.error?.message || err.message,
+            });
+        }
+    };
 
 
     const fetchProfile = async () => {
@@ -106,7 +222,7 @@ function VoterHome() {
             setProfile(data);
             setProfileStatus(data.status || "PENDING");
             setProfileForm({
-                voterId: data.voterId || "",
+                walletAddress: data.walletAddress || "",
                 dateOfBirth: data.dateOfBirth ? data.dateOfBirth.split('T')[0] : "",
                 gender: data.gender || "Male",
                 address: data.address || "",
@@ -145,7 +261,7 @@ function VoterHome() {
                     const startDate = details?.electionStart ? new Date(details.electionStart) : null;
                     const endDate = details?.electionEnd ? new Date(details.electionEnd) : null;
                     const regClose = details?.candidateRegistrationLastDate ? new Date(details.candidateRegistrationLastDate) : null;
-                   
+
                     // Determine election status based on dates
                     let computedStatus = details?.status || item.status || "DRAFT";
                     if (startDate && endDate) {
@@ -157,9 +273,10 @@ function VoterHome() {
                             computedStatus = "COMPLETED";
                         }
                     }
-                   
+
                     return {
                         id: details?._id || item._id || item.electionId || item.id,
+                        blockchainElectionId: details?.electionId || item.electionId,
                         title: details?.title || "Untitled Election",
                         description: details?.description || "No description provided.",
                         level: details?.level || "NATIONAL",
@@ -247,11 +364,19 @@ function VoterHome() {
             setProfileMessage({ type: "error", text: "Document file is required." });
             return;
         }
+        if (!profileForm.walletAddress) {
+            setProfileMessage({ type: "error", text: "Wallet address is required." });
+            return;
+        }
+        // Basic wallet address validation (Ethereum-like)
+        if (!/^0x[a-fA-F0-9]{40}$/.test(profileForm.walletAddress)) {
+            setProfileMessage({ type: "error", text: "Enter a valid wallet address (starts with 0x and 42 chars)." });
+            return;
+        }
 
 
         const formData = new FormData();
         Object.entries(profileForm).forEach(([key, value]) => {
-            if (key === "voterId" && !value) return; // let backend auto-generate
             formData.append(key, value);
         });
         formData.append("documentFile", documentFile);
@@ -286,7 +411,7 @@ function VoterHome() {
 
         const formData = new FormData();
         Object.entries(profileForm).forEach(([key, value]) => {
-            if (key !== "voterId" && value) {
+            if (key !== "walletAddress" && value) {
                 formData.append(key, value);
             }
         });
@@ -329,7 +454,7 @@ function VoterHome() {
         // Reset form to current profile data
         if (profile) {
             setProfileForm({
-                voterId: profile.voterId || "",
+                walletAddress: profile.walletAddress || "",
                 dateOfBirth: profile.dateOfBirth ? profile.dateOfBirth.split('T')[0] : "",
                 gender: profile.gender || "Male",
                 address: profile.address || "",
@@ -407,9 +532,6 @@ function VoterHome() {
     const badge = statusBadge(profileStatus);
 
 
-    const redDotClass = needsAttention ? "status-dot danger" : "status-dot success";
-
-
     const renderProfileTab = () => (
         <>
             <section className="panel">
@@ -443,8 +565,8 @@ function VoterHome() {
                     <>
                         <div className="profile-summary">
                             <div>
-                                <p className="muted small">Voter ID</p>
-                                <strong>{profile.voterId}</strong>
+                                <p className="muted small">Wallet Address</p>
+                                <strong>{profile.walletAddress || "N/A"}</strong>
                             </div>
                             <div>
                                 <p className="muted small">Date of Birth</p>
@@ -481,10 +603,10 @@ function VoterHome() {
                     <form className="admin-form" onSubmit={handleProfileUpdate}>
                         <div className="form-grid">
                             <label>
-                                Voter ID (cannot change)
+                                Wallet Address (cannot change)
                                 <input
-                                    name="voterId"
-                                    value={profileForm.voterId}
+                                    name="walletAddress"
+                                    value={profileForm.walletAddress}
                                     disabled
                                     style={{ backgroundColor: "#f0f0f0", cursor: "not-allowed" }}
                                 />
@@ -540,12 +662,13 @@ function VoterHome() {
                     <form className="admin-form" onSubmit={handleProfileSubmit}>
                         <div className="form-grid">
                             <label>
-                                Voter ID (auto)
+                                Wallet Address
                                 <input
-                                    name="voterId"
-                                    value={profileForm.voterId}
+                                    name="walletAddress"
+                                    value={profileForm.walletAddress}
                                     onChange={handleProfileChange}
-                                    placeholder="Auto-generated after submit"
+                                    placeholder="0x..."
+                                    required
                                 />
                             </label>
                             <label>
@@ -626,16 +749,16 @@ function VoterHome() {
                     {elections.map((election) => {
                         const isRegClosed = election.regClose && new Date() > election.regClose;
                         const canRegister = isVerified && !isRegClosed && (election.status === "UPCOMING" || election.status === "ACTIVE");
-                       
+
                         const getStatusColor = (status) => {
-                            switch(status) {
+                            switch (status) {
                                 case "ACTIVE": return "#28a745";
                                 case "UPCOMING": return "#007bff";
                                 case "COMPLETED": return "#6c757d";
                                 default: return "#ffc107";
                             }
                         };
-                       
+
                         return (
                             <div key={election.id} className="election-card">
                                 <div>
@@ -670,6 +793,13 @@ function VoterHome() {
                                         title={!isVerified ? "Voter approval required" : isRegClosed ? "Registration closed" : canRegister ? "Click to register" : "Registration not available"}
                                     >
                                         {!isVerified ? "Get approval to apply" : isRegClosed ? "Registration closed" : canRegister ? "Register as candidate" : "Registration closed"}
+                                    </button>
+
+                                    <button
+                                        className="ghost-btn"
+                                        onClick={() => openVotePanel(election)}
+                                    >
+                                        Vote Now
                                     </button>
                                 </div>
                             </div>
@@ -737,6 +867,60 @@ function VoterHome() {
                     </form>
                 </div>
             )}
+
+            {voteSelection && (
+                <div className="panel soft">
+                    <div className="panel-header">
+                        <div>
+                            <p className="eyebrow">Voting</p>
+                            <h3>Vote in {voteSelection.title}</h3>
+                            <p className="muted small">
+                                Wallet: {walletConnected ? walletAddress : "Not connected"}
+                            </p>
+                        </div>
+
+                        <div style={{ display: "flex", gap: "10px" }}>
+                            {!walletConnected && (
+                                <button className="primary-btn" onClick={connectWallet}>
+                                    Connect MetaMask
+                                </button>
+                            )}
+
+                            <button className="ghost-btn" onClick={() => setVoteSelection(null)}>
+                                Close
+                            </button>
+                        </div>
+                    </div>
+
+                    {walletError && <div className="status error">{walletError}</div>}
+
+                    {voteMessage.text && (
+                        <div className={`status ${voteMessage.type === "error" ? "error" : "success"}`}>
+                            {voteMessage.text}
+                        </div>
+                    )}
+
+                    {voteLoading ? (
+                        <p className="muted">Loading candidates...</p>
+                    ) : voteCandidates.length === 0 ? (
+                        <p className="muted">No approved candidates found.</p>
+                    ) : (
+                        <div className="election-grid">
+                            {voteCandidates.map((c) => (
+                                <div key={c._id} className="election-card">
+                                    <h4 style={{ margin: 0 }}>{c.partyName}</h4>
+                                    <p className="muted small">{c.manifesto}</p>
+
+                                    <button className="primary-btn" onClick={() => handleVote(c)}>
+                                        Vote
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            )}
+
         </section>
     );
 
