@@ -5,6 +5,16 @@ const Election = require("../models/Election.js");
 const Candidate = require("../models/Candidate.js");
 const Voter = require("../models/Voter.js");
 
+// Generate a unique voterId when not provided by the client
+const generateVoterId = async () => {
+  const makeId = () => `VOTER-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+  let candidate = makeId();
+  // very low chance of collision; loop until unique
+  while (await Voter.findOne({ voterId: candidate })) {
+    candidate = makeId();
+  }
+  return candidate;
+};
 
 
 // CREATE VOTER
@@ -18,6 +28,7 @@ const createVoterProfile = async (req, res) => {
 
     const {
       voterId,
+      walletAddress,
       dateOfBirth,
       gender,
       address,
@@ -27,9 +38,13 @@ const createVoterProfile = async (req, res) => {
       documentType,
     } = req.body;
 
-    // basic validation for required fields (except voterId, auto-generated)
-    if (!dateOfBirth || !gender || !address || !state || !district || !pincode || !documentType) {
-      return res.status(400).json({ message: "Missing required fields" });
+    if (!walletAddress) {
+      return res.status(400).json({ message: "walletAddress is required" });
+    }
+
+    // basic wallet format check
+    if (!walletAddress.startsWith("0x") || walletAddress.length !== 42) {
+      return res.status(400).json({ message: "Invalid wallet address" });
     }
 
     const existing = await Voter.findOne({ userId });
@@ -37,27 +52,18 @@ const createVoterProfile = async (req, res) => {
       return res.status(400).json({ message: "Voter already exists" });
     }
 
-    // auto-generate voterId if not provided
-    let finalVoterId = voterId;
-    if (!finalVoterId) {
-      let unique = false;
-      // attempt a few times to avoid collisions
-      for (let i = 0; i < 5 && !unique; i++) {
-        const candidateId = `VOT-${Date.now().toString(36)}-${Math.floor(Math.random() * 1000)}`;
-        const clash = await Voter.findOne({ voterId: candidateId });
-        if (!clash) {
-          finalVoterId = candidateId;
-          unique = true;
-        }
-      }
-      if (!finalVoterId) {
-        return res.status(500).json({ message: "Could not generate voter ID" });
-      }
+    // prevent same wallet used by multiple voters
+    const walletUsed = await Voter.findOne({ walletAddress });
+    if (walletUsed) {
+      return res.status(400).json({ message: "Wallet already linked with another voter" });
     }
+
+    const newVoterId = voterId && voterId.trim() ? voterId.trim() : await generateVoterId();
 
     const voter = await Voter.create({
       userId,
-      voterId: finalVoterId,
+      voterId: newVoterId,
+      walletAddress,
       dateOfBirth,
       gender,
       address,
@@ -69,12 +75,13 @@ const createVoterProfile = async (req, res) => {
       status: "PENDING",
     });
 
-    res.status(201).json({ message: "Voter created", voter });
+    return res.status(201).json({ message: "Voter created", voter });
+
   } catch (err) {
-    console.error("CREATE_VOTER_ERROR", err);
-    res.status(500).json({ message: err.message || "Internal server error" });
+    return res.status(500).json({ error: err.message });
   }
 };
+
 
 // GET ALL VOTERS (ADMIN)
 const getAllVoters = async (req, res) => {
@@ -197,7 +204,16 @@ const verifyVoter = async (req, res) => {
     voter.remarks = remarks || "";
 
     await voter.save();
+     if (status === "VERIFIED") {
+      if (!voter.walletAddress) {
+        return res.status(400).json({ message: "Voter walletAddress missing" });
+      }
 
+      const tx = await contract.verifyVoter(voter.walletAddress, { gasLimit: 200000 });
+      await tx.wait();
+    }
+
+   
     return res.json({
       message: `Voter ${status.toLowerCase()} successfully`,
       voter

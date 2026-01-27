@@ -67,7 +67,8 @@ const voterSchema = new mongoose.Schema({
   walletAddress: {
     type: String,
     unique: true,
-    sparse: true
+    sparse: true,
+    trim: true
   }
 
 });

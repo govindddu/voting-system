@@ -47,9 +47,7 @@ const registerCandidate = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    if (!user.privateKey || !user.privateKeyEncrypted) {
-      return res.status(400).json({ message: "Private key not found. Please ensure your account was registered properly." });
-    }
+    
 
     // 4️⃣ File validation
     if (!req.files || !req.files.documentFile) {
@@ -88,19 +86,17 @@ const registerCandidate = async (req, res) => {
 // =====================================
 const approveCandidate = async (req, res) => {
   try {
+    // 🔐 Admin check
     if (req.user.role !== "ADMIN") {
       return res.status(403).json({ message: "Access denied" });
     }
 
     const { status, remarks } = req.body;
 
-    if (!status) {
-      return res.status(400).json({ message: "status is required" });
+    // ✅ Candidate schema enum: PENDING, VERIFIED, REJECTED
+    if (!["VERIFIED", "REJECTED"].includes(status)) {
+      return res.status(400).json({ message: "Invalid status value" });
     }
-
-    // if (!["APPROVED", "REJECTED"].includes(status)) {
-    //   return res.status(400).json({ message: "Invalid status value" });
-    // }
 
     const candidate = await Candidate.findById(req.params.id).populate("electionId");
 
@@ -110,12 +106,12 @@ const approveCandidate = async (req, res) => {
 
     // Update MongoDB status
     candidate.status = status;
-    candidate.remarks = remarks;
+    candidate.remarks = remarks || "";
 
-    // ✅ If APPROVED → Add to blockchain
+    // ✅ If VERIFIED → Add candidate to blockchain
     if (status === "VERIFIED") {
-      // Election must contain blockchain electionId (uint)
-      if (!candidate.electionId.electionId) {
+      // electionId.electionId = blockchain election id (uint)
+      if (!candidate.electionId?.electionId) {
         return res.status(400).json({
           message: "Election blockchain electionId missing in DB"
         });
@@ -123,16 +119,16 @@ const approveCandidate = async (req, res) => {
 
       const blockchainElectionId = Number(candidate.electionId.electionId);
 
-      // Add candidate name to blockchain
+      // add candidate name on blockchain
       const tx = await contract.addCandidate(
         blockchainElectionId,
-        candidate.partyName, // or use user fullName if you want
+        candidate.partyName,
         { gasLimit: 500000 }
       );
 
       await tx.wait();
 
-      // Get new candidateId from blockchain
+      // get candidateId from blockchain
       const newCandidateId = await contract.candidateCount(blockchainElectionId);
 
       candidate.blockchainCandidateId = Number(newCandidateId);
@@ -145,12 +141,31 @@ const approveCandidate = async (req, res) => {
       message: "Candidate status updated successfully",
       candidate
     });
+
   } catch (err) {
     return res.status(500).json({ error: err.message });
   }
 };
 
+const getCandidatesByElection = async (req, res) => {
+  try {
+    const electionMongoId = req.params.electionMongoId;
+
+    const candidates = await Candidate.find({
+      electionId: electionMongoId,
+      status: "VERIFIED"
+    });
+
+    return res.json({ candidates });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+};
+
+
+
 module.exports = {
   registerCandidate,
-  approveCandidate
+  approveCandidate,
+  getCandidatesByElection
 };
