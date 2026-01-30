@@ -143,6 +143,7 @@ function AdminHome() {
                 </div>
                 <div className="top-actions">
                     <Link className="ghost-btn" to="/admin/voters">Voter verification</Link>
+                    <Link className="ghost-btn" to="/admin/candidates">Candidate verification</Link>
                     <Link className="primary-btn" to="/register">Invite admin</Link>
                     <button className="ghost-btn" onClick={handleLogout}>Log out</button>
                 </div>

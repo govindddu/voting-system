@@ -4,6 +4,7 @@ import Login from "./pages/login.jsx";
 import Register from "./pages/register.jsx";
 import AdminHome from "./pages/adminHome.jsx";
 import VoterVerification from "./pages/voterVerification.jsx";
+import CandidateVerification from "./pages/candidateVerification.jsx";
 import VoterHome from "./pages/voterHome.jsx";
 import "./App.css";
 
@@ -43,6 +44,7 @@ const MainLayout = () => (
   <Routes>
     <Route path="/admin" element={<AdminHome />} />
     <Route path="/admin/voters" element={<VoterVerification />} />
+    <Route path="/admin/candidates" element={<CandidateVerification />} />
     <Route path="/voter" element={<VoterHome />} />
     <Route path="*" element={<Navigate to="/login" replace />} />
   </Routes>
