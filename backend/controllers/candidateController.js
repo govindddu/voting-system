@@ -1,3 +1,4 @@
+const path = require("path");
 const Candidate = require("../models/Candidate.js");
 const Election = require("../models/Election.js");
 const contract = require("../Blockchain/contract.js");
@@ -47,7 +48,7 @@ const registerCandidate = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    
+
 
     // 4️⃣ File validation
     if (!req.files || !req.files.documentFile) {
@@ -162,10 +163,41 @@ const getCandidatesByElection = async (req, res) => {
   }
 };
 
+// =====================================
+// ADMIN → Get All Candidates (for verification)
+// =====================================
+const getAllCandidates = async (req, res) => {
+  try {
+    if (req.user.role !== "ADMIN") {
+      return res.status(403).json({ message: "Access denied" });
+    }
 
+    const candidates = await Candidate.find()
+      .populate("userId", "fullName email phoneNumber role")
+      .populate("electionId", "title level")
+      .sort({ createdAt: -1 });
+
+    // attach document URL path (frontend can prefix host)
+    const result = candidates.map((c) => {
+      const fileName = c.documentFile ? path.basename(c.documentFile) : null;
+      const folder = c.documentType || "docs";
+      const documentUrl = fileName ? `/uploads/${folder}/${fileName}` : null;
+      return {
+        ...c.toObject(),
+        documentUrl
+      };
+    });
+
+    return res.json(result);
+  } catch (err) {
+    console.error("GET_ALL_CANDIDATES_ERROR", err);
+    return res.status(500).json({ message: err.message || "Internal server error" });
+  }
+};
 
 module.exports = {
   registerCandidate,
   approveCandidate,
-  getCandidatesByElection
+  getCandidatesByElection,
+  getAllCandidates
 };

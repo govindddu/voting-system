@@ -30,7 +30,7 @@ const defaultCandidateForm = {
 
 
 
- function VoterHome() {
+function VoterHome() {
     const token = useMemo(() => localStorage.getItem("token"), []);
     const navigate = useNavigate();
 
@@ -66,6 +66,10 @@ const defaultCandidateForm = {
     const [voteCandidates, setVoteCandidates] = useState([]);
     const [voteLoading, setVoteLoading] = useState(false);
     const [voteMessage, setVoteMessage] = useState({ type: "", text: "" });
+    const [hasAlreadyVoted, setHasAlreadyVoted] = useState(false);
+    const [alreadyVotedFor, setAlreadyVotedFor] = useState(null);
+    const [isWalletVerified, setIsWalletVerified] = useState(null);
+    const [walletVerificationMessage, setWalletVerificationMessage] = useState("");
 
 
     const statusBadge = (status) => {
@@ -89,25 +93,25 @@ const defaultCandidateForm = {
     useEffect(() => {
         fetchProfile();
         fetchElections();
-        
+
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
     useEffect(() => {
-  const checkNetwork = async () => {
-    if (!window.ethereum) {
-      console.log("MetaMask not found");
-      return;
-    }
+        const checkNetwork = async () => {
+            if (!window.ethereum) {
+                console.log("MetaMask not found");
+                return;
+            }
 
-    const provider = new ethers.BrowserProvider(window.ethereum);
-    const network = await provider.getNetwork();
+            const provider = new ethers.BrowserProvider(window.ethereum);
+            const network = await provider.getNetwork();
 
-    console.log("Connected Network:", network);
-    console.log("Chain ID:", network.chainId.toString());
-  };
+            console.log("Connected Network:", network);
+            console.log("Chain ID:", network.chainId.toString());
+        };
 
-  checkNetwork();
-}, []);
+        checkNetwork();
+    }, []);
 
 
 
@@ -133,8 +137,12 @@ const defaultCandidateForm = {
                 method: "eth_requestAccounts",
             });
 
-            setWalletAddress(accounts[0]);
+            const connectedWallet = accounts[0];
+
+            // Store the connected wallet for display purposes
+            setWalletAddress(connectedWallet);
             setWalletConnected(true);
+            setWalletError("");
         } catch (err) {
             setWalletError(err.message);
         }
@@ -145,68 +153,273 @@ const defaultCandidateForm = {
             setVoteSelection(election);
             setVoteMessage({ type: "", text: "" });
             setVoteLoading(true);
+            setHasAlreadyVoted(false);
+            setAlreadyVotedFor(null);
+            setIsWalletVerified(null);
+            setWalletVerificationMessage("");
+
+            // ✅ Check if wallet is verified on blockchain - PRIORITY 1
+            try {
+                const walletRes = await axios.get(
+                    `${API_BASE}/votes/check-wallet`,
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                        },
+                    }
+                );
+
+                setIsWalletVerified(walletRes.data.isWalletVerified);
+                if (!walletRes.data.isWalletVerified) {
+                    const verificationMsg = walletRes.data.message || "Your wallet is not verified on blockchain";
+                    setWalletVerificationMessage(verificationMsg);
+                    setVoteMessage({
+                        type: "error",
+                        text: `❌ ${verificationMsg}`
+                    });
+                    setVoteLoading(false);
+                    return; // Stop here - don't show other errors
+                }
+            } catch (err) {
+                console.error("Wallet verification check error:", err);
+                const errorMsg = err.response?.data?.message || err.message || "Could not verify wallet status";
+                setIsWalletVerified(false);
+                setWalletVerificationMessage(errorMsg);
+                setVoteMessage({
+                    type: "error",
+                    text: `❌ ${errorMsg}`
+                });
+                setVoteLoading(false);
+                return; // Stop here - don't show other errors
+            }
+
+            // Check if voter has already voted in this election - PRIORITY 2
+            try {
+                const checkRes = await axios.post(
+                    `${API_BASE}/votes/check-voted`,
+                    { electionMongoId: election.id },
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                        },
+                    }
+                );
+
+                if (checkRes.data.hasVoted) {
+                    setHasAlreadyVoted(true);
+                    setAlreadyVotedFor(checkRes.data.votedFor);
+                    setVoteMessage({
+                        type: "warning",
+                        text: `⚠️ You have already voted for: ${checkRes.data.votedFor}`
+                    });
+                    setVoteLoading(false);
+                    return; // Stop here - don't load candidates
+                }
+            } catch (err) {
+                // If check fails, continue with voting flow
+                console.error("Vote check error:", err);
+            }
 
             // Fetch candidates for this election (status: VERIFIED)
-            const res = await axios.get(
-                `${API_BASE}/candidates/election/${election.id}`,
-                {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
-                }
-            );
+            try {
+                const res = await axios.get(
+                    `${API_BASE}/candidates/election/${election.id}`,
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                        },
+                    }
+                );
 
-            setVoteCandidates(res.data.candidates || []);
-        } catch (err) {
-            setVoteMessage({
-                type: "error",
-                text: err.response?.data?.message || err.message,
-            });
+                setVoteCandidates(res.data.candidates || []);
+            } catch (err) {
+                const backendMsg = err.response?.data?.message;
+                const backendError = err.response?.data?.error;
+                const errorText = backendMsg || backendError || err.message || "Failed to load candidates";
+
+                setVoteMessage({
+                    type: "error",
+                    text: `❌ ${errorText}`,
+                });
+            }
         } finally {
             setVoteLoading(false);
         }
-    };
+    }
 
     const handleVote = async (candidate) => {
         try {
             setVoteMessage({ type: "", text: "" });
 
+            // ✅ Check if wallet is verified on blockchain
+            if (isWalletVerified === false) {
+                setVoteMessage({
+                    type: "error",
+                    text: `❌ ${walletVerificationMessage}`
+                });
+                return;
+            }
+
+            // Check if already voted
+            if (hasAlreadyVoted) {
+                setVoteMessage({ type: "error", text: "❌ You have already voted in this election. One vote per person." });
+                return;
+            }
+
             if (!walletConnected) {
-                setVoteMessage({ type: "error", text: "Please connect MetaMask first" });
+                setVoteMessage({ type: "error", text: "❌ Please connect MetaMask first" });
                 return;
             }
 
             if (!voteSelection?.blockchainElectionId) {
-                setVoteMessage({ type: "error", text: "Blockchain electionId missing" });
+                setVoteMessage({ type: "error", text: "❌ Blockchain electionId missing" });
                 return;
             }
 
             if (!candidate.blockchainCandidateId) {
-                setVoteMessage({ type: "error", text: "Candidate blockchainCandidateId missing" });
+                setVoteMessage({ type: "error", text: "❌ Candidate blockchainCandidateId missing" });
                 return;
             }
 
+            setVoteMessage({ type: "info", text: "📝 MetaMask will open to confirm your vote..." });
+
+            // ✅ Use MetaMask to vote directly
             const contract = await getContract();
 
             const tx = await contract.vote(
                 Number(voteSelection.blockchainElectionId),
-                Number(candidate.blockchainCandidateId)
+                Number(candidate.blockchainCandidateId),
+                { gasLimit: 500000 }
             );
 
-            setVoteMessage({ type: "success", text: "Transaction sent: " + tx.hash });
+            setVoteMessage({ type: "success", text: "⏳ Transaction sent! Waiting for confirmation..." });
 
             await tx.wait();
 
-            setVoteMessage({ type: "success", text: "✅ Vote successful! Tx: " + tx.hash });
+            // ✅ Save vote to MongoDB after blockchain confirmation
+            try {
+                await axios.post(
+                    `${API_BASE}/votes/cast`,
+                    {
+                        electionMongoId: voteSelection.id,
+                        candidateMongoId: candidate._id
+                    },
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                        },
+                    }
+                );
+
+                setVoteMessage({
+                    type: "success",
+                    text: `✅ Vote cast successfully! Your vote has been recorded on the blockchain (${tx.hash.substring(0, 20)}...) and saved to our database.`
+                });
+                setHasAlreadyVoted(true);
+                setAlreadyVotedFor(candidate.partyName);
+            } catch (saveErr) {
+                // Backend error saving to DB - extract the proper error message
+                const backendError = saveErr.response?.data;
+                let errorMessage = "";
+
+                if (backendError?.message) {
+                    errorMessage = backendError.message;
+                } else if (backendError?.error) {
+                    errorMessage = backendError.error;
+                } else if (backendError?.details) {
+                    errorMessage = backendError.details;
+                } else if (saveErr.message) {
+                    errorMessage = saveErr.message;
+                } else {
+                    errorMessage = "Unknown error while saving vote to database";
+                }
+
+                // Show backend error even though blockchain vote succeeded
+                setVoteMessage({
+                    type: "warning",
+                    text: `⚠️ Your vote was recorded on blockchain (${tx.hash.substring(0, 20)}...) but encountered an issue: ${errorMessage}`
+                });
+            }
         } catch (err) {
-            console.error(err);
+            console.error("Vote error:", err);
+
+            // Helper to extract the most relevant error message
+            const extractErrorMessage = (error) => {
+                if (!error) return "Unknown error";
+
+                // 1. Check for backend API errors first
+                if (error.response?.data?.message) {
+                    return error.response.data.message;
+                }
+
+                // 2. Check for Solidity revert reason (Best Case)
+                if (error.reason) return error.reason;
+
+                // 3. User Rejected
+                if (error.code === "ACTION_REJECTED" || error.code === 4001) {
+                    return "You cancelled the transaction.";
+                }
+
+                // 4. Nested RPC Errors (MetaMask/Ethers wrapper)
+                if (error.info?.error?.message) return error.info.error.message;
+                if (error.info?.message) return error.info.message;
+                if (error.data?.message) return error.data.message;
+
+                // 5. Look for inner error
+                if (error.error) {
+                    // Recurse into inner error if present
+                    const innerMsg = extractErrorMessage(error.error);
+                    if (innerMsg && innerMsg !== "Unknown error" && !innerMsg.includes("coalesce")) {
+                        return innerMsg;
+                    }
+                }
+
+                // 6. Ethers v6 short message
+                if (error.shortMessage) return error.shortMessage;
+
+                // 7. Parse string message for common patterns
+                if (error.message) {
+                    // Handle "could not coalesce error" specifically - ignore it and return generic if nothing else found
+                    if (error.message.includes("could not coalesce error")) {
+                        // Try to find a better message in other properties that might have been missed
+                        // or return a sensible default for contract failures
+                        return "Smart Contract Verification Failed. Checks: 1. You are verified? 2. Election Active? 3. Already Voted?";
+                    }
+
+                    // Extract "execution reverted: reason"
+                    const revertMatch = error.message.match(/execution reverted: ([^"]*)/);
+                    if (revertMatch) return revertMatch[1];
+
+                    // Extract "reason string '...'"
+                    const reasonStringMatch = error.message.match(/reason string '([^']*)'/);
+                    if (reasonStringMatch) return reasonStringMatch[1];
+
+                    return error.message;
+                }
+
+                return "Transaction failed";
+            };
+
+            let finalMessage = extractErrorMessage(err);
+
+            // Cleanup common technical junk
+            finalMessage = finalMessage.replace("execution reverted:", "").trim();
+            finalMessage = finalMessage.replace("Internal JSON-RPC error.", "").trim();
+            if (finalMessage.toLowerCase().includes("user rejected")) {
+                finalMessage = "Transaction cancelled by user.";
+            }
+
+            // If message is still huge (code dump), default to generic
+            if (finalMessage.length > 200 || finalMessage.includes("{")) {
+                finalMessage = "Vote failed. Please ensure you are verified and the election is active.";
+            }
+
             setVoteMessage({
                 type: "error",
-                text: err?.reason || err?.info?.error?.message || err.message,
+                text: `❌ ${finalMessage}`,
             });
         }
-    };
-
+    }
 
     const fetchProfile = async () => {
         if (!token) {
@@ -240,8 +453,7 @@ const defaultCandidateForm = {
         } finally {
             setProfileLoading(false);
         }
-    };
-
+    }
 
     const fetchElections = async () => {
         if (!token) {
@@ -299,8 +511,7 @@ const defaultCandidateForm = {
         } finally {
             setElectionsLoading(false);
         }
-    };
-
+    }
 
     const fetchResults = async () => {
         setResultsLoading(true);
@@ -325,8 +536,7 @@ const defaultCandidateForm = {
         } finally {
             setResultsLoading(false);
         }
-    };
-
+    }
 
     const fetchPastVotes = async () => {
         if (!token) {
@@ -345,14 +555,12 @@ const defaultCandidateForm = {
         } finally {
             setPastVotesLoading(false);
         }
-    };
-
+    }
 
     const handleProfileChange = (e) => {
         const { name, value } = e.target;
         setProfileForm((prev) => ({ ...prev, [name]: value }));
-    };
-
+    }
 
     const handleProfileSubmit = async (e) => {
         e.preventDefault();
@@ -398,8 +606,7 @@ const defaultCandidateForm = {
             const serverMsg = err.response?.data?.message || err.response?.data?.error;
             setProfileMessage({ type: "error", text: serverMsg || "Could not submit profile." });
         }
-    };
-
+    }
 
     const handleProfileUpdate = async (e) => {
         e.preventDefault();
@@ -438,14 +645,12 @@ const defaultCandidateForm = {
             const serverMsg = err.response?.data?.message || err.response?.data?.error;
             setProfileMessage({ type: "error", text: serverMsg || "Could not update profile." });
         }
-    };
-
+    }
 
     const handleEditProfile = () => {
         setIsEditingProfile(true);
         setProfileMessage({ type: "", text: "" });
-    };
-
+    }
 
     const handleCancelEdit = () => {
         setIsEditingProfile(false);
@@ -464,8 +669,7 @@ const defaultCandidateForm = {
                 documentType: profile.documentType || "AADHAR"
             });
         }
-    };
-
+    }
 
     const openCandidateForm = (election) => {
         setCandidateSelection(election);
@@ -473,7 +677,7 @@ const defaultCandidateForm = {
         setCandidateDoc(null);
         setCandidateSymbol(null);
         setCandidateMessage({ type: "", text: "" });
-    };
+    }
 
 
     const handleCandidateSubmit = async (e) => {
@@ -526,8 +730,7 @@ const defaultCandidateForm = {
         } catch (err) {
             setCandidateMessage({ type: "error", text: err.response?.data?.message || "Could not submit candidate request." });
         }
-    };
-
+    }
 
     const badge = statusBadge(profileStatus);
 
@@ -875,7 +1078,7 @@ const defaultCandidateForm = {
                             <p className="eyebrow">Voting</p>
                             <h3>Vote in {voteSelection.title}</h3>
                             <p className="muted small">
-                                Wallet: {walletConnected ? walletAddress : "Not connected"}
+                                Your Registered Wallet: <strong>{profile?.walletAddress || "Not registered"}</strong>
                             </p>
                         </div>
 
@@ -911,8 +1114,13 @@ const defaultCandidateForm = {
                                     <h4 style={{ margin: 0 }}>{c.partyName}</h4>
                                     <p className="muted small">{c.manifesto}</p>
 
-                                    <button className="primary-btn" onClick={() => handleVote(c)}>
-                                        Vote
+                                    <button
+                                        className="primary-btn"
+                                        onClick={() => handleVote(c)}
+                                        disabled={hasAlreadyVoted || isWalletVerified === false}
+                                        style={{ opacity: (hasAlreadyVoted || isWalletVerified === false) ? 0.5 : 1, cursor: (hasAlreadyVoted || isWalletVerified === false) ? 'not-allowed' : 'pointer' }}
+                                    >
+                                        {isWalletVerified === false ? "Wallet Not Verified" : hasAlreadyVoted ? `Voted for ${alreadyVotedFor}` : "Vote"}
                                     </button>
                                 </div>
                             ))}
@@ -1002,7 +1210,7 @@ const defaultCandidateForm = {
 
 
     return (
-        <div className="voter-shell">
+        <div className="voter-shell" >
             <VoterNavbar
                 activeTab={activeTab}
                 onTabChange={setActiveTab}
@@ -1017,7 +1225,7 @@ const defaultCandidateForm = {
                 {activeTab === "results" && renderResultsTab()}
                 {activeTab === "past-votes" && renderPastVotesTab()}
             </div>
-        </div>
+        </div >
     );
 }
 
