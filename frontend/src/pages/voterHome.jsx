@@ -1231,7 +1231,3 @@ function VoterHome() {
 
 
 export default VoterHome;
-
-
-
-
