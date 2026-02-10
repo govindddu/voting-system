@@ -242,9 +242,122 @@ const getVoterVote = async (req, res) => {
   }
 };
 
+
+/**
+ * GET RESULTS FROM BLOCKCHAIN
+ * GET /api/votes/results/:electionMongoId
+ */
+const getElectionResults = async (req, res) => {
+  try {
+    const { electionMongoId } = req.params;
+
+    // 1️⃣ Find election from MongoDB
+    const election = await Election.findById(electionMongoId);
+
+    if (!election) {
+      return res.status(404).json({ message: "Election not found" });
+    }
+
+    if (!election.electionId) {
+      return res.status(400).json({
+        message: "Blockchain electionId missing in DB"
+      });
+    }
+
+    const blockchainElectionId = Number(election.electionId);
+
+    // 2️⃣ Get total candidates from blockchain
+    const totalCandidates = await contract.getCandidateCount(blockchainElectionId);
+
+    const results = [];
+
+    // 3️⃣ Loop through candidates
+    for (let i = 1; i <= Number(totalCandidates); i++) {
+
+      const chainCandidate = await contract.getCandidate(
+        blockchainElectionId,
+        i
+      );
+
+      // Find Mongo candidate
+      const mongoCandidate = await Candidate.findOne({
+        blockchainCandidateId: i,
+        electionId: electionMongoId
+      }).populate("userId", "fullName");
+
+      results.push({
+        candidateId: i,
+        name: chainCandidate.name,
+        wallet: chainCandidate.wallet,
+        votes: Number(chainCandidate.voteCount),
+        candidateName: mongoCandidate?.userId?.fullName || "Unknown"
+      });
+    }
+
+    res.json({
+      electionTitle: election.title,
+      totalCandidates: Number(totalCandidates),
+      results
+    });
+
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+const getAllCompletedResults = async (req, res) => {
+  try {
+    const now = new Date();
+
+    // 1️⃣ Get completed elections
+    const elections = await Election.find({
+      electionEnd: { $lt: now }
+    });
+
+    const results = [];
+
+    // 2️⃣ Loop elections
+    for (const election of elections) {
+      const blockchainElectionId = election.electionId;
+
+      if (!blockchainElectionId) continue;
+
+      // 3️⃣ Get candidate count from blockchain
+      const count = await contract.getCandidateCount(blockchainElectionId);
+
+      const candidates = [];
+
+      // 4️⃣ Loop candidates
+      for (let i = 1; i <= Number(count); i++) {
+        const c = await contract.getCandidate(blockchainElectionId, i);
+
+        candidates.push({
+          candidateId: i,
+          name: c.name,
+          wallet: c.wallet,
+          voteCount: Number(c.voteCount)
+        });
+      }
+
+      results.push({
+        electionTitle: election.title,
+        electionId: blockchainElectionId,
+        candidates
+      });
+    }
+
+    res.json(results);
+
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
 module.exports = {
   castVote,
   checkIfVoted,
   getVoterVote,
-  checkWalletVerification
+  checkWalletVerification,
+  getElectionResults,
+  getAllCompletedResults,
 };

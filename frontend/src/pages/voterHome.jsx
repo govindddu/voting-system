@@ -56,6 +56,7 @@ function VoterHome() {
 
     const [results, setResults] = useState([]);
     const [resultsLoading, setResultsLoading] = useState(false);
+    const [selectedResultElection, setSelectedResultElection] = useState(null);
     const [pastVotes, setPastVotes] = useState([]);
     const [pastVotesLoading, setPastVotesLoading] = useState(false);
     const [walletAddress, setWalletAddress] = useState("");
@@ -516,22 +517,12 @@ function VoterHome() {
     const fetchResults = async () => {
         setResultsLoading(true);
         try {
-            const { data } = await axios.get(`${API_BASE}/elections`);
-            const raw = Array.isArray(data) ? data : data.elections || data.data || [];
-            const completed = raw
-                .filter((e) => (e.details?.status || e.status) === "COMPLETED")
-                .map((item) => {
-                    const details = item.details || item;
-                    return {
-                        id: details?._id || item._id || item.electionId || item.id,
-                        title: details?.title || "Untitled Election",
-                        level: details?.level || "NATIONAL",
-                        status: details?.status || "COMPLETED",
-                        raw: item
-                    };
-                });
-            setResults(completed);
+            const { data } = await axios.get(`${API_BASE}/votes/results/completed`);
+            // Data format: [{electionTitle, electionId, candidates: [{candidateId, name, voteCount}]}]
+            const completedElections = Array.isArray(data) ? data : [];
+            setResults(completedElections);
         } catch (err) {
+            console.error('Error fetching results:', err);
             setResults([]);
         } finally {
             setResultsLoading(false);
@@ -1133,38 +1124,166 @@ function VoterHome() {
     );
 
 
-    const renderResultsTab = () => (
-        <section className="panel">
-            <div className="panel-header">
-                <div>
-                    <p className="eyebrow">Election outcomes</p>
-                    <h2>Results</h2>
-                </div>
-            </div>
+    const renderResultsTab = () => {
+        // If viewing detailed results for a specific election
+        if (selectedResultElection) {
+            const totalVotes = selectedResultElection.candidates.reduce((sum, c) => sum + c.voteCount, 0);
+            const sortedCandidates = [...selectedResultElection.candidates].sort((a, b) => b.voteCount - a.voteCount);
 
-
-            {resultsLoading ? (
-                <p className="muted">Loading results...</p>
-            ) : results.length === 0 ? (
-                <div className="notice info">No completed elections with results available yet.</div>
-            ) : (
-                <div className="election-grid">
-                    {results.map((election) => (
-                        <div key={election.id} className="election-card">
-                            <div>
-                                <h4>{election.title}</h4>
-                                <p className="muted small">Level: {election.level}</p>
-                                <p className="muted small">Status: {election.status}</p>
-                            </div>
-                            <div className="card-actions">
-                                <button className="primary-btn">View Results</button>
-                            </div>
+            return (
+                <section className="panel">
+                    <div className="panel-header">
+                        <div>
+                            <p className="eyebrow">Election Results</p>
+                            <h2>{selectedResultElection.electionTitle}</h2>
+                            <p className="muted small">Total Candidates: {selectedResultElection.candidates.length} | Total Votes: {totalVotes}</p>
                         </div>
-                    ))}
+                        <button className="ghost-btn" onClick={() => setSelectedResultElection(null)}>Back to Results</button>
+                    </div>
+
+                    {selectedResultElection.candidates.length === 0 ? (
+                        <div className="notice info">No candidates registered for this election.</div>
+                    ) : (
+                        <div style={{ marginTop: "20px" }}>
+                            <h3 style={{ marginBottom: "15px" }}>Vote Distribution</h3>
+                            <div className="results-list">
+                                {sortedCandidates.map((candidate, index) => {
+                                    const percentage = totalVotes > 0 ? ((candidate.voteCount / totalVotes) * 100).toFixed(2) : 0;
+                                    
+                                    return (
+                                        <div
+                                            key={candidate.candidateId}
+                                            style={{
+                                                padding: "15px 20px",
+                                                marginBottom: "12px",
+                                                border: "1px solid #e0e0e0",
+                                                borderRadius: "8px",
+                                                backgroundColor: index === 0 && candidate.voteCount > 0 ? "#f0f8ff" : "#fff",
+                                            }}
+                                        >
+                                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
+                                                <div style={{ display: "flex", alignItems: "center", gap: "15px" }}>
+                                                    <span style={{
+                                                        fontSize: "20px",
+                                                        fontWeight: "bold",
+                                                        color: index === 0 && candidate.voteCount > 0 ? "#28a745" : "#666",
+                                                        minWidth: "30px"
+                                                    }}>
+                                                        #{index + 1}
+                                                    </span>
+                                                    <div>
+                                                        <h4 style={{ margin: 0, fontSize: "18px" }}>
+                                                            {index === 0 && candidate.voteCount > 0 && "🏆 "}
+                                                            {candidate.name}
+                                                        </h4>
+                                                    </div>
+                                                </div>
+                                                <div style={{ textAlign: "right" }}>
+                                                    <div style={{ fontSize: "24px", fontWeight: "bold", color: "#333" }}>
+                                                        {candidate.voteCount}
+                                                    </div>
+                                                    <div className="muted small">{percentage}%</div>
+                                                </div>
+                                            </div>
+                                            {totalVotes > 0 && (
+                                                <div style={{
+                                                    height: "8px",
+                                                    backgroundColor: "#f0f0f0",
+                                                    borderRadius: "4px",
+                                                    overflow: "hidden"
+                                                }}>
+                                                    <div style={{
+                                                        height: "100%",
+                                                        width: `${percentage}%`,
+                                                        backgroundColor: index === 0 && candidate.voteCount > 0 ? "#28a745" : "#007bff",
+                                                        transition: "width 0.3s ease"
+                                                    }} />
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+
+                            {totalVotes === 0 && (
+                                <div className="notice warning" style={{ marginTop: "20px" }}>
+                                    No votes have been cast yet in this election.
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </section>
+            );
+        }
+
+        // List all completed elections
+        return (
+            <section className="panel">
+                <div className="panel-header">
+                    <div>
+                        <p className="eyebrow">Election outcomes</p>
+                        <h2>Results</h2>
+                    </div>
                 </div>
-            )}
-        </section>
-    );
+
+                {resultsLoading ? (
+                    <p className="muted">Loading results...</p>
+                ) : results.length === 0 ? (
+                    <div className="notice info">No completed elections with results available yet.</div>
+                ) : (
+                    <div className="election-grid">
+                        {results.map((election) => {
+                            const totalVotes = election.candidates.reduce((sum, c) => sum + c.voteCount, 0);
+                            const winner = election.candidates.length > 0
+                                ? election.candidates.reduce((max, c) => c.voteCount > max.voteCount ? c : max)
+                                : null;
+
+                            return (
+                                <div key={election.electionId} className="election-card">
+                                    <div>
+                                        <h4>{election.electionTitle}</h4>
+                                        <p className="muted small">Election ID: {election.electionId}</p>
+                                        <p className="muted small">Total Candidates: {election.candidates.length}</p>
+                                        <p className="muted small">Total Votes: {totalVotes}</p>
+                                        {winner && winner.voteCount > 0 && (
+                                            <div style={{
+                                                marginTop: "10px",
+                                                padding: "8px 12px",
+                                                backgroundColor: "#f0f8ff",
+                                                borderRadius: "4px",
+                                                borderLeft: "3px solid #28a745"
+                                            }}>
+                                                <p className="muted small" style={{ margin: 0 }}>
+                                                    🏆 <strong>Leading:</strong> {winner.name}
+                                                </p>
+                                                <p className="muted small" style={{ margin: "2px 0 0 0" }}>
+                                                    {winner.voteCount} votes
+                                                </p>
+                                            </div>
+                                        )}
+                                        {election.candidates.length === 0 && (
+                                            <div className="notice warning" style={{ marginTop: "10px", padding: "8px", fontSize: "12px" }}>
+                                                No candidates registered
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="card-actions">
+                                        <button
+                                            className="primary-btn"
+                                            onClick={() => setSelectedResultElection(election)}
+                                            disabled={election.candidates.length === 0}
+                                        >
+                                            View Results
+                                        </button>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
+            </section>
+        );
+    };
 
 
     const renderPastVotesTab = () => (

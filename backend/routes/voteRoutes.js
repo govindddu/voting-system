@@ -2,7 +2,8 @@ const express = require("express");
 const router = express.Router();
 const auth = require("../middleware/authMiddleware");
 
-const { castVote, checkIfVoted, getVoterVote, checkWalletVerification } = require("../controllers/voteController");
+const { castVote, checkIfVoted, getVoterVote, checkWalletVerification,getElectionResults,getAllCompletedResults  } = require("../controllers/voteController");
+
 
 // VOTER → cast vote
 router.post("/cast", auth, castVote);
@@ -15,5 +16,9 @@ router.get("/check-wallet", auth, checkWalletVerification);
 
 // VOTER → get their vote in an election
 router.get("/:electionMongoId", auth, getVoterVote);
+
+
+router.get("/results/completed", getAllCompletedResults);
+router.get("/results/:electionMongoId", getElectionResults);
 
 module.exports = router;
