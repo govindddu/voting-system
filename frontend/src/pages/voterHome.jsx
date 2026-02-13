@@ -789,188 +789,275 @@ function VoterHome() {
 
     const renderProfileTab = () => (
         <>
-            <section className="panel">
-                <div className="panel-header">
-                    <div>
-                        <p className="eyebrow">Your profile</p>
-                        <h2>Status: {badge.label}</h2>
+            {/* Hero Banner */}
+            <div className="profile-banner">
+                <div className="profile-banner-bg"></div>
+                <div className="profile-banner-content">
+                    <div className="profile-avatar">
+                        <span className="profile-avatar-icon">👤</span>
                     </div>
-                    {needsAttention && <span className="pill subtle">Action needed</span>}
+                    <div className="profile-banner-info">
+                        <h1 className="profile-name">Voter Profile</h1>
+                        <p className="profile-subtitle">Manage your voter information and stay eligible for elections</p>
+                    </div>
+                    <div className="profile-status-badge-wrapper">
+                        <div className={`profile-status-badge ${badge.tone}`}>
+                            <span className="status-indicator"></span>
+                            <span>{badge.label}</span>
+                        </div>
+                    </div>
                 </div>
+            </div>
 
+            {/* Messages */}
+            {profileMessage.text && (
+                <div className={`profile-alert ${profileMessage.type === "error" ? "alert-error" : "alert-success"}`}>
+                    <span className="alert-icon">{profileMessage.type === "error" ? "⚠️" : "✅"}</span>
+                    <span>{profileMessage.text}</span>
+                </div>
+            )}
 
-                {profileMessage.text && (
-                    <div className={`status ${profileMessage.type === "error" ? "error" : "success"}`}>
-                        {profileMessage.text}
-                    </div>
-                )}
+            {profileStatus === "REJECTED" && profile?.remarks && (
+                <div className="profile-alert alert-error">
+                    <span className="alert-icon">❌</span>
+                    <span><strong>Rejected:</strong> {profile.remarks}</span>
+                </div>
+            )}
+            {profileStatus === "PENDING" && (
+                <div className="profile-alert alert-warning">
+                    <span className="alert-icon">⏳</span>
+                    <span>Your profile is under review. You can still edit and resubmit if needed.</span>
+                </div>
+            )}
 
-
-                {profileStatus === "REJECTED" && profile?.remarks && (
-                    <div className="notice error">Rejected: {profile.remarks}</div>
-                )}
-                {profileStatus === "PENDING" && (
-                    <div className="notice warning">Your profile is under review. You can still edit and resubmit if needed.</div>
-                )}
-
-
+            {/* Profile Content */}
+            <section className="profile-content">
                 {profileLoading ? (
-                    <p className="muted">Loading profile...</p>
+                    <div className="profile-loading">
+                        <div className="spinner"></div>
+                        <p>Loading your profile...</p>
+                    </div>
                 ) : profile && profileStatus !== "MISSING" && !isEditingProfile ? (
                     <>
-                        <div className="profile-summary">
-                            <div>
-                                <p className="muted small">Wallet Address</p>
-                                <strong>{profile.walletAddress || "N/A"}</strong>
+                        {/* Stats Row */}
+                        <div className="profile-stats-row">
+                            <div className="profile-stat">
+                                <span className="stat-icon">🗳️</span>
+                                <div className="stat-info">
+                                    <span className="stat-value">{isVerified ? "Active" : "Inactive"}</span>
+                                    <span className="stat-label">Voting Status</span>
+                                </div>
                             </div>
-                            <div>
-                                <p className="muted small">Date of Birth</p>
-                                <strong>{profile.dateOfBirth ? new Date(profile.dateOfBirth).toLocaleDateString() : "N/A"}</strong>
+                            <div className="profile-stat">
+                                <span className="stat-icon">🔐</span>
+                                <div className="stat-info">
+                                    <span className="stat-value">{profile.walletAddress ? "Connected" : "Not Set"}</span>
+                                    <span className="stat-label">Wallet</span>
+                                </div>
                             </div>
-                            <div>
-                                <p className="muted small">Gender</p>
-                                <strong>{profile.gender}</strong>
-                            </div>
-                            <div>
-                                <p className="muted small">Address</p>
-                                <strong>{profile.address}</strong>
-                            </div>
-                            <div>
-                                <p className="muted small">State / District</p>
-                                <strong>{profile.state} / {profile.district}</strong>
-                            </div>
-                            <div>
-                                <p className="muted small">Pincode</p>
-                                <strong>{profile.pincode}</strong>
-                            </div>
-                            <div>
-                                <p className="muted small">Status</p>
-                                <strong>{badge.label}</strong>
+                            <div className="profile-stat">
+                                <span className="stat-icon">📋</span>
+                                <div className="stat-info">
+                                    <span className="stat-value">{profile.documentType || "AADHAR"}</span>
+                                    <span className="stat-label">Document</span>
+                                </div>
                             </div>
                         </div>
-                        <div className="action-row" style={{ marginTop: "20px" }}>
-                            <button type="button" className="primary-btn" onClick={handleEditProfile}>
+
+                        {/* Info Cards */}
+                        <div className="profile-section-title">
+                            <h3>Personal Information</h3>
+                            <p className="muted small">Your registered voter details</p>
+                        </div>
+
+                        <div className="profile-cards-grid">
+                            <div className="profile-info-card">
+                                <div className="info-card-icon wallet">💳</div>
+                                <div className="info-card-content">
+                                    <span className="info-card-label">Wallet Address</span>
+                                    <span className="info-card-value mono">{profile.walletAddress || "Not registered"}</span>
+                                </div>
+                            </div>
+                            <div className="profile-info-card">
+                                <div className="info-card-icon calendar">📅</div>
+                                <div className="info-card-content">
+                                    <span className="info-card-label">Date of Birth</span>
+                                    <span className="info-card-value">{profile.dateOfBirth ? new Date(profile.dateOfBirth).toLocaleDateString() : "N/A"}</span>
+                                </div>
+                            </div>
+                            <div className="profile-info-card">
+                                <div className="info-card-icon gender">👤</div>
+                                <div className="info-card-content">
+                                    <span className="info-card-label">Gender</span>
+                                    <span className="info-card-value">{profile.gender}</span>
+                                </div>
+                            </div>
+                            <div className="profile-info-card full-width">
+                                <div className="info-card-icon location">📍</div>
+                                <div className="info-card-content">
+                                    <span className="info-card-label">Full Address</span>
+                                    <span className="info-card-value">{profile.address}</span>
+                                </div>
+                            </div>
+                            <div className="profile-info-card">
+                                <div className="info-card-icon state">🏛️</div>
+                                <div className="info-card-content">
+                                    <span className="info-card-label">State / District</span>
+                                    <span className="info-card-value">{profile.state} / {profile.district}</span>
+                                </div>
+                            </div>
+                            <div className="profile-info-card">
+                                <div className="info-card-icon pin">📮</div>
+                                <div className="info-card-content">
+                                    <span className="info-card-label">Pincode</span>
+                                    <span className="info-card-value">{profile.pincode}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Action Footer */}
+                        <div className="profile-footer">
+                            <button type="button" className="profile-edit-btn" onClick={handleEditProfile}>
+                                <span className="btn-icon">✏️</span>
                                 Edit Profile
                             </button>
                         </div>
                     </>
                 ) : isEditingProfile ? (
-                    <form className="admin-form" onSubmit={handleProfileUpdate}>
-                        <div className="form-grid">
-                            <label>
-                                Wallet Address (cannot change)
-                                <input
-                                    name="walletAddress"
-                                    value={profileForm.walletAddress}
-                                    disabled
-                                    style={{ backgroundColor: "#f0f0f0", cursor: "not-allowed" }}
-                                />
-                            </label>
-                            <label>
-                                Date of Birth
-                                <input type="date" name="dateOfBirth" value={profileForm.dateOfBirth} onChange={handleProfileChange} required />
-                            </label>
-                            <label>
-                                Gender
-                                <select name="gender" value={profileForm.gender} onChange={handleProfileChange}>
-                                    <option value="Male">Male</option>
-                                    <option value="Female">Female</option>
-                                    <option value="Other">Other</option>
-                                </select>
-                            </label>
-                            <label>
-                                Address
-                                <input name="address" value={profileForm.address} onChange={handleProfileChange} required />
-                            </label>
-                            <label>
-                                State
-                                <input name="state" value={profileForm.state} onChange={handleProfileChange} required />
-                            </label>
-                            <label>
-                                District
-                                <input name="district" value={profileForm.district} onChange={handleProfileChange} required />
-                            </label>
-                            <label>
-                                Pincode
-                                <input name="pincode" value={profileForm.pincode} onChange={handleProfileChange} required />
-                            </label>
-                            <label>
-                                Document type
-                                <select name="documentType" value={profileForm.documentType} onChange={handleProfileChange}>
-                                    <option value="AADHAR">Aadhar</option>
-                                    <option value="PAN">PAN</option>
-                                    <option value="VOTER">Voter ID</option>
-                                </select>
-                            </label>
-                            <label className="full">
-                                Upload new document (optional)
-                                <input type="file" accept="image/*,application/pdf" onChange={(e) => setDocumentFile(e.target.files?.[0] || null)} />
-                                <p className="muted small" style={{ marginTop: "4px" }}>Leave empty to keep existing document</p>
-                            </label>
+                    <div className="profile-form-section">
+                        <div className="profile-section-title">
+                            <h3>Edit Your Information</h3>
+                            <p className="muted small">Update your voter registration details</p>
                         </div>
-                        <div className="action-row">
-                            <button type="button" className="ghost-btn" onClick={handleCancelEdit}>Cancel</button>
-                            <button type="submit" className="submit-btn">Update Profile</button>
-                        </div>
-                    </form>
+                        <form className="profile-form" onSubmit={handleProfileUpdate}>
+                            <div className="form-grid">
+                                <label>
+                                    Wallet Address (cannot change)
+                                    <input
+                                        name="walletAddress"
+                                        value={profileForm.walletAddress}
+                                        disabled
+                                        style={{ backgroundColor: "#f0f0f0", cursor: "not-allowed" }}
+                                    />
+                                </label>
+                                <label>
+                                    Date of Birth
+                                    <input type="date" name="dateOfBirth" value={profileForm.dateOfBirth} onChange={handleProfileChange} required />
+                                </label>
+                                <label>
+                                    Gender
+                                    <select name="gender" value={profileForm.gender} onChange={handleProfileChange}>
+                                        <option value="Male">Male</option>
+                                        <option value="Female">Female</option>
+                                        <option value="Other">Other</option>
+                                    </select>
+                                </label>
+                                <label>
+                                    Address
+                                    <input name="address" value={profileForm.address} onChange={handleProfileChange} required />
+                                </label>
+                                <label>
+                                    State
+                                    <input name="state" value={profileForm.state} onChange={handleProfileChange} required />
+                                </label>
+                                <label>
+                                    District
+                                    <input name="district" value={profileForm.district} onChange={handleProfileChange} required />
+                                </label>
+                                <label>
+                                    Pincode
+                                    <input name="pincode" value={profileForm.pincode} onChange={handleProfileChange} required />
+                                </label>
+                                <label>
+                                    Document type
+                                    <select name="documentType" value={profileForm.documentType} onChange={handleProfileChange}>
+                                        <option value="AADHAR">Aadhar</option>
+                                        <option value="PAN">PAN</option>
+                                        <option value="VOTER">Voter ID</option>
+                                    </select>
+                                </label>
+                                <label className="full">
+                                    Upload new document (optional)
+                                    <input type="file" accept="image/*,application/pdf" onChange={(e) => setDocumentFile(e.target.files?.[0] || null)} />
+                                    <p className="muted small" style={{ marginTop: "4px" }}>Leave empty to keep existing document</p>
+                                </label>
+                            </div>
+                            <div className="profile-form-actions">
+                                <button type="button" className="profile-cancel-btn" onClick={handleCancelEdit}>
+                                    <span>❌</span> Cancel
+                                </button>
+                                <button type="submit" className="profile-submit-btn">
+                                    <span>✅</span> Update Profile
+                                </button>
+                            </div>
+                        </form>
+                    </div>
                 ) : (
-                    <form className="admin-form" onSubmit={handleProfileSubmit}>
-                        <div className="form-grid">
-                            <label>
-                                Wallet Address
-                                <input
-                                    name="walletAddress"
-                                    value={profileForm.walletAddress}
-                                    onChange={handleProfileChange}
-                                    placeholder="0x..."
-                                    required
-                                />
-                            </label>
-                            <label>
-                                Date of Birth
-                                <input type="date" name="dateOfBirth" value={profileForm.dateOfBirth} onChange={handleProfileChange} required />
-                            </label>
-                            <label>
-                                Gender
-                                <select name="gender" value={profileForm.gender} onChange={handleProfileChange}>
-                                    <option value="Male">Male</option>
-                                    <option value="Female">Female</option>
-                                    <option value="Other">Other</option>
-                                </select>
-                            </label>
-                            <label>
-                                Address
-                                <input name="address" value={profileForm.address} onChange={handleProfileChange} required />
-                            </label>
-                            <label>
-                                State
-                                <input name="state" value={profileForm.state} onChange={handleProfileChange} required />
-                            </label>
-                            <label>
-                                District
-                                <input name="district" value={profileForm.district} onChange={handleProfileChange} required />
-                            </label>
-                            <label>
-                                Pincode
-                                <input name="pincode" value={profileForm.pincode} onChange={handleProfileChange} required />
-                            </label>
-                            <label>
-                                Document type
-                                <select name="documentType" value={profileForm.documentType} onChange={handleProfileChange}>
-                                    <option value="AADHAR">Aadhar</option>
-                                    <option value="PAN">PAN</option>
-                                    <option value="VOTER">Voter ID</option>
-                                </select>
-                            </label>
-                            <label className="full">
-                                Upload document
-                                <input type="file" accept="image/*,application/pdf" onChange={(e) => setDocumentFile(e.target.files?.[0] || null)} required />
-                            </label>
+                    <div className="profile-form-section">
+                        <div className="profile-section-title">
+                            <h3>Complete Your Registration</h3>
+                            <p className="muted small">Fill in your details to become a verified voter</p>
                         </div>
-                        <div className="action-row">
-                            <button type="submit" className="submit-btn">Submit for approval</button>
-                        </div>
-                    </form>
+                        <form className="profile-form" onSubmit={handleProfileSubmit}>
+                            <div className="form-grid">
+                                <label>
+                                    Wallet Address
+                                    <input
+                                        name="walletAddress"
+                                        value={profileForm.walletAddress}
+                                        onChange={handleProfileChange}
+                                        placeholder="0x..."
+                                        required
+                                    />
+                                </label>
+                                <label>
+                                    Date of Birth
+                                    <input type="date" name="dateOfBirth" value={profileForm.dateOfBirth} onChange={handleProfileChange} required />
+                                </label>
+                                <label>
+                                    Gender
+                                    <select name="gender" value={profileForm.gender} onChange={handleProfileChange}>
+                                        <option value="Male">Male</option>
+                                        <option value="Female">Female</option>
+                                        <option value="Other">Other</option>
+                                    </select>
+                                </label>
+                                <label>
+                                    Address
+                                    <input name="address" value={profileForm.address} onChange={handleProfileChange} required />
+                                </label>
+                                <label>
+                                    State
+                                    <input name="state" value={profileForm.state} onChange={handleProfileChange} required />
+                                </label>
+                                <label>
+                                    District
+                                    <input name="district" value={profileForm.district} onChange={handleProfileChange} required />
+                                </label>
+                                <label>
+                                    Pincode
+                                    <input name="pincode" value={profileForm.pincode} onChange={handleProfileChange} required />
+                                </label>
+                                <label>
+                                    Document type
+                                    <select name="documentType" value={profileForm.documentType} onChange={handleProfileChange}>
+                                        <option value="AADHAR">Aadhar</option>
+                                        <option value="PAN">PAN</option>
+                                        <option value="VOTER">Voter ID</option>
+                                    </select>
+                                </label>
+                                <label className="full">
+                                    Upload document
+                                    <input type="file" accept="image/*,application/pdf" onChange={(e) => setDocumentFile(e.target.files?.[0] || null)} required />
+                                </label>
+                            </div>
+                            <div className="profile-form-actions">
+                                <button type="submit" className="profile-submit-btn full-width">
+                                    <span>📤</span> Submit for Approval
+                                </button>
+                            </div>
+                        </form>
+                    </div>
                 )}
             </section>
 
@@ -991,137 +1078,147 @@ function VoterHome() {
             return election.status === electionFilter;
         });
 
+        const getStatusClass = (status) => {
+            switch (status) {
+                case "ACTIVE": return "status-active";
+                case "UPCOMING": return "status-upcoming";
+                case "COMPLETED": return "status-completed";
+                default: return "status-default";
+            }
+        };
+
         return (
-            <section className="panel">
-                <div className="panel-header">
-                    <div>
-                        <p className="eyebrow">All elections</p>
-                        <h2>Elections & Candidate Registration</h2>
+            <section className="elections-panel">
+                {/* Enhanced Header */}
+                <div className="elections-header">
+                    <div className="elections-header-content">
+                        <div className="elections-header-icon">
+                            <span>🗳️</span>
+                            <div className="header-icon-glow"></div>
+                        </div>
+                        <div className="elections-header-text">
+                            <span className="elections-eyebrow">ALL ELECTIONS</span>
+                            <h2 className="elections-title">Elections & Candidate Registration</h2>
+                        </div>
                     </div>
-                    {!isVerified && <span className="pill subtle">Approval required to apply</span>}
+                    {!isVerified && (
+                        <div className="elections-approval-badge">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <circle cx="12" cy="12" r="10" />
+                                <line x1="12" y1="8" x2="12" y2="12" />
+                                <line x1="12" y1="16" x2="12.01" y2="16" />
+                            </svg>
+                            <span>Approval required to apply</span>
+                        </div>
+                    )}
                 </div>
 
-                {/* Filter Buttons */}
-                <div style={{ display: "flex", gap: "10px", marginBottom: "20px", flexWrap: "wrap" }}>
-                    <button
-                        onClick={() => setElectionFilter("ALL")}
-                        style={{
-                            padding: "8px 16px",
-                            borderRadius: "20px",
-                            border: electionFilter === "ALL" ? "2px solid #007bff" : "2px solid #ddd",
-                            backgroundColor: electionFilter === "ALL" ? "#007bff" : "#fff",
-                            color: electionFilter === "ALL" ? "#fff" : "#333",
-                            cursor: "pointer",
-                            fontWeight: "600",
-                            fontSize: "14px",
-                            transition: "all 0.2s"
-                        }}
-                    >
-                        All ({elections.length})
-                    </button>
-                    <button
-                        onClick={() => setElectionFilter("ACTIVE")}
-                        style={{
-                            padding: "8px 16px",
-                            borderRadius: "20px",
-                            border: electionFilter === "ACTIVE" ? "2px solid #28a745" : "2px solid #ddd",
-                            backgroundColor: electionFilter === "ACTIVE" ? "#28a745" : "#fff",
-                            color: electionFilter === "ACTIVE" ? "#fff" : "#333",
-                            cursor: "pointer",
-                            fontWeight: "600",
-                            fontSize: "14px",
-                            transition: "all 0.2s"
-                        }}
-                    >
-                        Active ({elections.filter(e => e.status === "ACTIVE").length})
-                    </button>
-                    <button
-                        onClick={() => setElectionFilter("UPCOMING")}
-                        style={{
-                            padding: "8px 16px",
-                            borderRadius: "20px",
-                            border: electionFilter === "UPCOMING" ? "2px solid #007bff" : "2px solid #ddd",
-                            backgroundColor: electionFilter === "UPCOMING" ? "#007bff" : "#fff",
-                            color: electionFilter === "UPCOMING" ? "#fff" : "#333",
-                            cursor: "pointer",
-                            fontWeight: "600",
-                            fontSize: "14px",
-                            transition: "all 0.2s"
-                        }}
-                    >
-                        Upcoming ({elections.filter(e => e.status === "UPCOMING").length})
-                    </button>
-                    <button
-                        onClick={() => setElectionFilter("COMPLETED")}
-                        style={{
-                            padding: "8px 16px",
-                            borderRadius: "20px",
-                            border: electionFilter === "COMPLETED" ? "2px solid #6c757d" : "2px solid #ddd",
-                            backgroundColor: electionFilter === "COMPLETED" ? "#6c757d" : "#fff",
-                            color: electionFilter === "COMPLETED" ? "#fff" : "#333",
-                            cursor: "pointer",
-                            fontWeight: "600",
-                            fontSize: "14px",
-                            transition: "all 0.2s"
-                        }}
-                    >
-                        Completed ({elections.filter(e => e.status === "COMPLETED").length})
-                    </button>
+                {/* Enhanced Filter Tabs */}
+                <div className="elections-filter-container">
+                    <div className="elections-filter-tabs">
+                        <button
+                            className={`filter-tab ${electionFilter === "ALL" ? "active" : ""}`}
+                            onClick={() => setElectionFilter("ALL")}
+                        >
+                            <span className="filter-tab-icon">📊</span>
+                            <span className="filter-tab-label">All</span>
+                            <span className="filter-tab-count">{elections.length}</span>
+                        </button>
+                        <button
+                            className={`filter-tab filter-active ${electionFilter === "ACTIVE" ? "active" : ""}`}
+                            onClick={() => setElectionFilter("ACTIVE")}
+                        >
+                            <span className="filter-tab-icon">🟢</span>
+                            <span className="filter-tab-label">Active</span>
+                            <span className="filter-tab-count">{elections.filter(e => e.status === "ACTIVE").length}</span>
+                        </button>
+                        <button
+                            className={`filter-tab filter-upcoming ${electionFilter === "UPCOMING" ? "active" : ""}`}
+                            onClick={() => setElectionFilter("UPCOMING")}
+                        >
+                            <span className="filter-tab-icon">⏰</span>
+                            <span className="filter-tab-label">Upcoming</span>
+                            <span className="filter-tab-count">{elections.filter(e => e.status === "UPCOMING").length}</span>
+                        </button>
+                        <button
+                            className={`filter-tab filter-completed ${electionFilter === "COMPLETED" ? "active" : ""}`}
+                            onClick={() => setElectionFilter("COMPLETED")}
+                        >
+                            <span className="filter-tab-icon">✅</span>
+                            <span className="filter-tab-label">Completed</span>
+                            <span className="filter-tab-count">{elections.filter(e => e.status === "COMPLETED").length}</span>
+                        </button>
+                    </div>
                 </div>
 
                 {electionsLoading ? (
-                    <p className="muted">Loading elections...</p>
+                    <div className="elections-loading">
+                        <div className="loading-spinner"></div>
+                        <p>Loading elections...</p>
+                    </div>
                 ) : filteredElections.length === 0 ? (
-                    <p className="muted">No {electionFilter === "ALL" ? "" : electionFilter.toLowerCase()} elections available.</p>
+                    <div className="elections-empty">
+                        <div className="empty-icon">🗳️</div>
+                        <h3>No Elections Found</h3>
+                        <p>No {electionFilter === "ALL" ? "" : electionFilter.toLowerCase()} elections available at the moment.</p>
+                    </div>
                 ) : (
-                    <div className="election-grid">
+                    <div className="elections-grid">
                         {filteredElections.map((election) => {
                             const isRegClosed = election.regClose && new Date() > election.regClose;
                             const canRegister = isVerified && !isRegClosed && (election.status === "UPCOMING" || election.status === "ACTIVE");
-
-                            // Check if voting is allowed: only when election is ACTIVE (today between start and end)
                             const canVote = election.status === "ACTIVE" && election.startDate && election.endDate &&
                                 new Date() >= election.startDate && new Date() <= election.endDate;
 
-                            const getStatusColor = (status) => {
-                                switch (status) {
-                                    case "ACTIVE": return "#28a745";
-                                    case "UPCOMING": return "#007bff";
-                                    case "COMPLETED": return "#6c757d";
-                                    default: return "#ffc107";
-                                }
-                            };
-
                             return (
-                                <div key={election.id} className="election-card">
-                                    <div>
-                                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
-                                            <h4 style={{ margin: 0 }}>{election.title}</h4>
-                                            <span style={{
-                                                padding: "4px 12px",
-                                                borderRadius: "12px",
-                                                fontSize: "12px",
-                                                fontWeight: "600",
-                                                color: "#fff",
-                                                backgroundColor: getStatusColor(election.status)
-                                            }}>
+                                <div key={election.id} className={`election-card-enhanced ${getStatusClass(election.status)}`}>
+                                    <div className="ecard-header">
+                                        <div className="ecard-title-row">
+                                            <h4 className="ecard-title">{election.title}</h4>
+                                            <span className={`ecard-status ${getStatusClass(election.status)}`}>
                                                 {election.status}
                                             </span>
                                         </div>
-                                        <p className="muted">{election.description}</p>
-                                        <p className="muted small">Level: {election.level}</p>
-                                        {election.category && <p className="muted small">Category: {election.category}</p>}
-                                        {election.regClose && (
-                                            <p className="muted small" style={{ color: isRegClosed ? "#dc3545" : "#28a745" }}>
-                                                Registration {isRegClosed ? "closed" : "closes"}: {election.regClose.toLocaleString()}
-                                            </p>
-                                        )}
-                                        <p className="muted small">Starts: {election.startDate ? election.startDate.toLocaleString() : "N/A"}</p>
-                                        <p className="muted small">Ends: {election.endDate ? election.endDate.toLocaleString() : "N/A"}</p>
+                                        <p className="ecard-description">{election.description}</p>
                                     </div>
-                                    <div className="card-actions">
+
+                                    <div className="ecard-meta">
+                                        <div className="ecard-meta-item">
+                                            <span className="meta-icon">🏔️</span>
+                                            <span className="meta-label">Level:</span>
+                                            <span className="meta-value">{election.level}</span>
+                                        </div>
+                                        {election.category && (
+                                            <div className="ecard-meta-item">
+                                                <span className="meta-icon">🏷️</span>
+                                                <span className="meta-label">Category:</span>
+                                                <span className="meta-value">{election.category}</span>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div className="ecard-timeline">
+                                        {election.regClose && (
+                                            <div className={`timeline-item ${isRegClosed ? "closed" : "open"}`}>
+                                                <span className="timeline-icon">{isRegClosed ? "❌" : "⏳"}</span>
+                                                <span className="timeline-text">
+                                                    Registration {isRegClosed ? "closed" : "closes"}: {election.regClose.toLocaleString()}
+                                                </span>
+                                            </div>
+                                        )}
+                                        <div className="timeline-item">
+                                            <span className="timeline-icon">🗓️</span>
+                                            <span className="timeline-text">Starts: {election.startDate ? election.startDate.toLocaleString() : "N/A"}</span>
+                                        </div>
+                                        <div className="timeline-item">
+                                            <span className="timeline-icon">🏁</span>
+                                            <span className="timeline-text">Ends: {election.endDate ? election.endDate.toLocaleString() : "N/A"}</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="ecard-actions">
                                         <button
-                                            className="primary-btn"
+                                            className={`ecard-btn primary ${!canRegister ? "disabled" : ""}`}
                                             disabled={!canRegister}
                                             onClick={() => openCandidateForm(election)}
                                             title={!isVerified ? "Voter approval required" : isRegClosed ? "Registration closed" : canRegister ? "Click to register" : "Registration not available"}
@@ -1131,9 +1228,13 @@ function VoterHome() {
 
                                         {canVote && (
                                             <button
-                                                className="ghost-btn"
+                                                className="ecard-btn vote"
                                                 onClick={() => openVotePanel(election)}
                                             >
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                    <path d="M9 12l2 2 4-4" />
+                                                    <rect x="3" y="3" width="18" height="18" rx="2" />
+                                                </svg>
                                                 Vote Now
                                             </button>
                                         )}
@@ -1262,349 +1363,333 @@ function VoterHome() {
                     </div>
                 )}
 
-                </section>
-            );
-        };
-    
-        const renderResultsTab = () => {
-            // If viewing detailed results for a specific election
-            if (selectedResultElection) {
-                const totalVotes = selectedResultElection.candidates.reduce((sum, c) => sum + c.voteCount, 0);
-                const sortedCandidates = [...selectedResultElection.candidates].sort((a, b) => b.voteCount - a.voteCount);
+            </section>
+        );
+    };
 
-                return (
-                    <section className="panel">
-                        <div className="panel-header">
-                            <div>
-                                <p className="eyebrow">Election Results</p>
-                                <h2>{selectedResultElection.electionTitle}</h2>
-                                <p className="muted small">Total Candidates: {selectedResultElection.candidates.length} | Total Votes: {totalVotes}</p>
-                            </div>
-                            <button className="ghost-btn" onClick={() => setSelectedResultElection(null)}>Back to Results</button>
-                        </div>
+    const renderResultsTab = () => {
+        // If viewing detailed results for a specific election
+        if (selectedResultElection) {
+            const totalVotes = selectedResultElection.candidates.reduce((sum, c) => sum + c.voteCount, 0);
+            const sortedCandidates = [...selectedResultElection.candidates].sort((a, b) => b.voteCount - a.voteCount);
 
-                        {selectedResultElection.candidates.length === 0 ? (
-                            <div className="notice info">No candidates registered for this election.</div>
-                        ) : (
-                            <div style={{ marginTop: "20px" }}>
-                                <h3 style={{ marginBottom: "15px" }}>Vote Distribution</h3>
-                                <div className="results-list">
-                                    {sortedCandidates.map((candidate, index) => {
-                                        const percentage = totalVotes > 0 ? ((candidate.voteCount / totalVotes) * 100).toFixed(2) : 0;
-
-                                        return (
-                                            <div
-                                                key={candidate.candidateId}
-                                                style={{
-                                                    padding: "15px 20px",
-                                                    marginBottom: "12px",
-                                                    border: "1px solid #e0e0e0",
-                                                    borderRadius: "8px",
-                                                    backgroundColor: index === 0 && candidate.voteCount > 0 ? "#f0f8ff" : "#fff",
-                                                }}
-                                            >
-                                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
-                                                    <div style={{ display: "flex", alignItems: "center", gap: "15px" }}>
-                                                        <span style={{
-                                                            fontSize: "20px",
-                                                            fontWeight: "bold",
-                                                            color: index === 0 && candidate.voteCount > 0 ? "#28a745" : "#666",
-                                                            minWidth: "30px"
-                                                        }}>
-                                                            #{index + 1}
-                                                        </span>
-                                                        <div>
-                                                            <h4 style={{ margin: 0, fontSize: "18px" }}>
-                                                                {index === 0 && candidate.voteCount > 0 && "🏆 "}
-                                                                {candidate.name}
-                                                            </h4>
-                                                        </div>
-                                                    </div>
-                                                    <div style={{ textAlign: "right" }}>
-                                                        <div style={{ fontSize: "24px", fontWeight: "bold", color: "#333" }}>
-                                                            {candidate.voteCount}
-                                                        </div>
-                                                        <div className="muted small">{percentage}%</div>
-                                                    </div>
-                                                </div>
-                                                {totalVotes > 0 && (
-                                                    <div style={{
-                                                        height: "8px",
-                                                        backgroundColor: "#f0f0f0",
-                                                        borderRadius: "4px",
-                                                        overflow: "hidden"
-                                                    }}>
-                                                        <div style={{
-                                                            height: "100%",
-                                                            width: `${percentage}%`,
-                                                            backgroundColor: index === 0 && candidate.voteCount > 0 ? "#28a745" : "#007bff",
-                                                            transition: "width 0.3s ease"
-                                                        }} />
-                                                    </div>
-                                                )}
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-
-                                {totalVotes === 0 && (
-                                    <div className="notice warning" style={{ marginTop: "20px" }}>
-                                        No votes have been cast yet in this election.
-                                    </div>
-                                )}
-                            </div>
-                        )}
-                    </section>
-                );
-            }
-
-            // List all completed elections
             return (
                 <section className="panel">
                     <div className="panel-header">
                         <div>
-                            <p className="eyebrow">Election outcomes</p>
-                            <h2>Results</h2>
+                            <p className="eyebrow">Election Results</p>
+                            <h2>{selectedResultElection.electionTitle}</h2>
                         </div>
+                        <button className="ghost-btn" onClick={() => setSelectedResultElection(null)}>Back to Results</button>
                     </div>
 
-                    {resultsLoading ? (
-                        <p className="muted">Loading results...</p>
-                    ) : results.length === 0 ? (
-                        <div className="notice info">No completed elections with results available yet.</div>
+                    {selectedResultElection.candidates.length === 0 ? (
+                        <div className="notice info">No candidates registered for this election.</div>
                     ) : (
-                        <div className="election-grid">
-                            {results.map((election) => {
-                                const totalVotes = election.candidates.reduce((sum, c) => sum + c.voteCount, 0);
-                                const winner = election.candidates.length > 0
-                                    ? election.candidates.reduce((max, c) => c.voteCount > max.voteCount ? c : max)
-                                    : null;
+                        <div className="results-detail">
+                            <div className="results-header">
+                                <h3>Vote Distribution</h3>
+                                <div className="results-metrics">
+                                    <span>Total Candidates: {selectedResultElection.candidates.length}</span>
+                                    <span>Total Votes: {totalVotes}</span>
+                                </div>
+                            </div>
+                            <div className="results-list">
+                                {sortedCandidates.map((candidate, index) => {
+                                    const percentage = totalVotes > 0 ? ((candidate.voteCount / totalVotes) * 100).toFixed(2) : 0;
+                                    const isWinner = index === 0 && candidate.voteCount > 0;
 
-                                return (
-                                    <div key={election.electionId} className="election-card">
-                                        <div>
-                                            <h4>{election.electionTitle}</h4>
-                                            <p className="muted small">Election ID: {election.electionId}</p>
-                                            <p className="muted small">Total Candidates: {election.candidates.length}</p>
-                                            <p className="muted small">Total Votes: {totalVotes}</p>
-                                            {winner && winner.voteCount > 0 && (
-                                                <div style={{
-                                                    marginTop: "10px",
-                                                    padding: "8px 12px",
-                                                    backgroundColor: "#f0f8ff",
-                                                    borderRadius: "4px",
-                                                    borderLeft: "3px solid #28a745"
-                                                }}>
-                                                    <p className="muted small" style={{ margin: 0 }}>
-                                                        🏆 <strong>Leading:</strong> {winner.name}
-                                                    </p>
-                                                    <p className="muted small" style={{ margin: "2px 0 0 0" }}>
-                                                        {winner.voteCount} votes
-                                                    </p>
+                                    return (
+                                        <div
+                                            key={candidate.candidateId}
+                                            className={`results-item${isWinner ? " is-winner" : ""}`}
+                                        >
+                                            <div className="results-row">
+                                                <div className="results-meta">
+                                                    <span className="results-rank">#{index + 1}</span>
+                                                    <div>
+                                                        <h4 className="results-name">
+                                                            {isWinner && "🏆 "}
+                                                            {candidate.name}
+                                                        </h4>
+                                                        <p className="muted small">{percentage}% of total votes</p>
+                                                    </div>
                                                 </div>
-                                            )}
-                                            {election.candidates.length === 0 && (
-                                                <div className="notice warning" style={{ marginTop: "10px", padding: "8px", fontSize: "12px" }}>
-                                                    No candidates registered
+                                                <div className="results-score">
+                                                    <span>{candidate.voteCount}</span>
+                                                </div>
+                                            </div>
+                                            {totalVotes > 0 && (
+                                                <div className="results-bar">
+                                                    <div
+                                                        className="results-bar-fill"
+                                                        style={{ width: `${percentage}%` }}
+                                                    />
                                                 </div>
                                             )}
                                         </div>
-                                        <div className="card-actions">
-                                            <button
-                                                className="primary-btn"
-                                                onClick={() => setSelectedResultElection(election)}
-                                                disabled={election.candidates.length === 0}
-                                            >
-                                                View Results
-                                            </button>
-                                        </div>
-                                    </div>
-                                );
-                            })}
+                                    );
+                                })}
+                            </div>
+
+                            {totalVotes === 0 && (
+                                <div className="notice warning" style={{ marginTop: "20px" }}>
+                                    No votes have been cast yet in this election.
+                                </div>
+                            )}
                         </div>
                     )}
                 </section>
             );
-        };
-    
-        const renderMyRegistrationsTab = () => (
+        }
+
+        // List all completed elections
+        return (
             <section className="panel">
                 <div className="panel-header">
                     <div>
-                        <p className="eyebrow">Candidate Applications</p>
-                        <h2>My Candidate Registrations</h2>
+                        <p className="eyebrow">Election outcomes</p>
+                        <h2>Results</h2>
                     </div>
                 </div>
 
-                {!isVerified ? (
-                    <div className="notice warning">
-                        Get your voter profile approved to view your candidate registrations.
-                    </div>
-                ) : myRegistrationsLoading ? (
-                    <p className="muted">Loading your candidate registrations...</p>
-                ) : myCandidateRegistrations.length === 0 ? (
-                    <div className="notice info">You haven't registered as a candidate yet. Go to Elections tab to register.</div>
+                {resultsLoading ? (
+                    <p className="muted">Loading results...</p>
+                ) : results.length === 0 ? (
+                    <div className="notice info">No completed elections with results available yet.</div>
                 ) : (
                     <div className="election-grid">
-                        {myCandidateRegistrations.map((registration) => {
-                            const getStatusColor = (status) => {
-                                switch (status) {
-                                    case "VERIFIED": return "#28a745";
-                                    case "PENDING": return "#ffc107";
-                                    case "REJECTED": return "#dc3545";
-                                    default: return "#6c757d";
-                                }
-                            };
-
-                            const getStatusLabel = (status) => {
-                                switch (status) {
-                                    case "VERIFIED": return "Approved";
-                                    case "PENDING": return "Under Review";
-                                    case "REJECTED": return "Rejected";
-                                    default: return status;
-                                }
-                            };
-
-                            const electionInfo = registration.electionId || registration.election;
-                            const now = new Date();
-                            const startDate = electionInfo?.electionStart ? new Date(electionInfo.electionStart) : null;
-                            const endDate = electionInfo?.electionEnd ? new Date(electionInfo.electionEnd) : null;
-                            
-                            let electionStatus = "UPCOMING";
-                            if (startDate && endDate) {
-                                if (now < startDate) {
-                                    electionStatus = "UPCOMING";
-                                } else if (now >= startDate && now <= endDate) {
-                                    electionStatus = "ACTIVE";
-                                } else if (now > endDate) {
-                                    electionStatus = "COMPLETED";
-                                }
-                            }
+                        {results.map((election) => {
+                            const totalVotes = election.candidates.reduce((sum, c) => sum + c.voteCount, 0);
+                            const winner = election.candidates.length > 0
+                                ? election.candidates.reduce((max, c) => c.voteCount > max.voteCount ? c : max)
+                                : null;
 
                             return (
-                                <button
-                                    key={registration._id}
-                                    className="election-card"
-                                    onClick={() => {
-                                        console.log('Clicked registration:', registration);
-                                        setSelectedRegistrationDetail(registration);
-
-                                        setMyRegistrationResultsLoading(false);
-                                        setMyRegistrationResultsError("");
-                                        setMyRegistrationElectionResults(null);
-
-                                        const electionInfo = registration.electionId || registration.election;
-                                        const now = new Date();
-                                        const endDate = electionInfo?.electionEnd ? new Date(electionInfo.electionEnd) : null;
-                                        const electionMongoId = electionInfo?._id;
-
-                                        if (endDate && now > endDate && electionMongoId) {
-                                            fetchMyRegistrationElectionResults(electionMongoId);
-                                        }
-                                    }}
-                                    style={{
-                                        cursor: "pointer",
-                                        transition: "transform 0.2s, box-shadow 0.2s",
-                                        border: "1px solid #e0e0e0",
-                                        background: "#fff",
-                                        textAlign: "left",
-                                        width: "100%"
-                                    }}
-                                    onMouseEnter={(e) => {
-                                        e.currentTarget.style.transform = "translateY(-2px)";
-                                        e.currentTarget.style.boxShadow = "0 4px 8px rgba(0,0,0,0.1)";
-                                    }}
-                                    onMouseLeave={(e) => {
-                                        e.currentTarget.style.transform = "translateY(0)";
-                                        e.currentTarget.style.boxShadow = "none";
-                                    }}
-                                >
+                                <div key={election.electionId} className="election-card">
                                     <div>
-                                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
-                                            <h4 style={{ margin: 0 }}>{registration.electionTitle || registration.election?.title || "Unknown Election"}</h4>
-                                            <span style={{
-                                                padding: "4px 12px",
-                                                borderRadius: "12px",
-                                                fontSize: "12px",
-                                                fontWeight: "600",
-                                                color: "#fff",
-                                                backgroundColor: getStatusColor(registration.status)
+                                        <h4>{election.electionTitle}</h4>
+                                        <p className="muted small">Election ID: {election.electionId}</p>
+                                        <p className="muted small">Total Candidates: {election.candidates.length}</p>
+                                        <p className="muted small">Total Votes: {totalVotes}</p>
+                                        {winner && winner.voteCount > 0 && (
+                                            <div style={{
+                                                marginTop: "10px",
+                                                padding: "8px 12px",
+                                                backgroundColor: "#f0f8ff",
+                                                borderRadius: "4px",
+                                                borderLeft: "3px solid #28a745"
                                             }}>
-                                                {getStatusLabel(registration.status)}
-                                            </span>
-                                        </div>
-                                        <p className="muted small">Party: <strong>{registration.partyName}</strong></p>
-                                        <p className="muted small">Manifesto: {registration.manifesto || "N/A"}</p>
-                                        <p className="muted small">Applied on: {registration.createdAt ? new Date(registration.createdAt).toLocaleString() : "N/A"}</p>
-                                        {registration.blockchainCandidateId && (
-                                            <p className="muted small" style={{ color: "#28a745", fontWeight: "600" }}>
-                                                ✓ Registered on Blockchain (ID: {registration.blockchainCandidateId})
-                                            </p>
+                                                <p className="muted small" style={{ margin: 0 }}>
+                                                    🏆 <strong>Leading:</strong> {winner.name}
+                                                </p>
+                                                <p className="muted small" style={{ margin: "2px 0 0 0" }}>
+                                                    {winner.voteCount} votes
+                                                </p>
+                                            </div>
                                         )}
-                                        <p className="muted small" style={{ marginTop: "10px", color: "#007bff", fontWeight: "600" }}>
-                                            👁️ Click to view election details
-                                        </p>
+                                        {election.candidates.length === 0 && (
+                                            <div className="notice warning" style={{ marginTop: "10px", padding: "8px", fontSize: "12px" }}>
+                                                No candidates registered
+                                            </div>
+                                        )}
                                     </div>
-                                </button>
+                                    <div className="card-actions">
+                                        <button
+                                            className="primary-btn"
+                                            onClick={() => setSelectedResultElection(election)}
+                                            disabled={election.candidates.length === 0}
+                                        >
+                                            View Results
+                                        </button>
+                                    </div>
+                                </div>
                             );
                         })}
                     </div>
                 )}
+            </section>
+        );
+    };
 
-                {selectedRegistrationDetail && (
-                    <div className="panel soft">
-                        <div className="panel-header">
-                            <div>
-                                <p className="eyebrow">Registration Details</p>
-                                <h3>{selectedRegistrationDetail.electionTitle || selectedRegistrationDetail.election?.title || "Election Details"}</h3>
-                            </div>
-                            <button className="ghost-btn" onClick={() => setSelectedRegistrationDetail(null)}>Close</button>
-                        </div>
+    const renderMyRegistrationsTab = () => (
+        <section className="panel">
+            <div className="panel-header">
+                <div>
+                    <p className="eyebrow">Candidate Applications</p>
+                    <h2>My Candidate Registrations</h2>
+                </div>
+            </div>
 
-                        <div style={{ display: "grid", gap: "20px" }}>
-                            {/* Registration Status Section */}
-                            <div style={{ padding: "15px", backgroundColor: "#f8f9fa", borderRadius: "8px" }}>
-                                <h4 style={{ marginTop: 0 }}>Your Registration Status</h4>
-                                <div style={{ display: "grid", gap: "10px" }}>
-                                    <p className="muted small">Status: <span style={{
-                                        padding: "4px 12px",
-                                        borderRadius: "12px",
-                                        fontSize: "12px",
-                                        fontWeight: "600",
-                                        color: "#fff",
-                                        backgroundColor: selectedRegistrationDetail.status === "VERIFIED" ? "#28a745" : selectedRegistrationDetail.status === "PENDING" ? "#ffc107" : "#dc3545"
-                                    }}>
-                                        {selectedRegistrationDetail.status === "VERIFIED" ? "Approved" : selectedRegistrationDetail.status === "PENDING" ? "Under Review" : "Rejected"}
-                                    </span></p>
-                                    <p className="muted small">Party: <strong>{selectedRegistrationDetail.partyName}</strong></p>
-                                    <p className="muted small">Manifesto: {selectedRegistrationDetail.manifesto || "N/A"}</p>
-                                    <p className="muted small">Applied on: {selectedRegistrationDetail.createdAt ? new Date(selectedRegistrationDetail.createdAt).toLocaleString() : "N/A"}</p>
-                                    {selectedRegistrationDetail.blockchainCandidateId && (
+            {!isVerified ? (
+                <div className="notice warning">
+                    Get your voter profile approved to view your candidate registrations.
+                </div>
+            ) : myRegistrationsLoading ? (
+                <p className="muted">Loading your candidate registrations...</p>
+            ) : myCandidateRegistrations.length === 0 ? (
+                <div className="notice info">You haven't registered as a candidate yet. Go to Elections tab to register.</div>
+            ) : (
+                <div className="election-grid">
+                    {myCandidateRegistrations.map((registration) => {
+                        const getStatusColor = (status) => {
+                            switch (status) {
+                                case "VERIFIED": return "#28a745";
+                                case "PENDING": return "#ffc107";
+                                case "REJECTED": return "#dc3545";
+                                default: return "#6c757d";
+                            }
+                        };
+
+                        const getStatusLabel = (status) => {
+                            switch (status) {
+                                case "VERIFIED": return "Approved";
+                                case "PENDING": return "Under Review";
+                                case "REJECTED": return "Rejected";
+                                default: return status;
+                            }
+                        };
+
+                        const electionInfo = registration.electionId || registration.election;
+                        const now = new Date();
+                        const startDate = electionInfo?.electionStart ? new Date(electionInfo.electionStart) : null;
+                        const endDate = electionInfo?.electionEnd ? new Date(electionInfo.electionEnd) : null;
+
+                        let electionStatus = "UPCOMING";
+                        if (startDate && endDate) {
+                            if (now < startDate) {
+                                electionStatus = "UPCOMING";
+                            } else if (now >= startDate && now <= endDate) {
+                                electionStatus = "ACTIVE";
+                            } else if (now > endDate) {
+                                electionStatus = "COMPLETED";
+                            }
+                        }
+
+                        return (
+                            <button
+                                key={registration._id}
+                                className="election-card"
+                                onClick={() => {
+                                    console.log('Clicked registration:', registration);
+                                    setSelectedRegistrationDetail(registration);
+
+                                    setMyRegistrationResultsLoading(false);
+                                    setMyRegistrationResultsError("");
+                                    setMyRegistrationElectionResults(null);
+
+                                    const electionInfo = registration.electionId || registration.election;
+                                    const now = new Date();
+                                    const endDate = electionInfo?.electionEnd ? new Date(electionInfo.electionEnd) : null;
+                                    const electionMongoId = electionInfo?._id;
+
+                                    if (endDate && now > endDate && electionMongoId) {
+                                        fetchMyRegistrationElectionResults(electionMongoId);
+                                    }
+                                }}
+                                style={{
+                                    cursor: "pointer",
+                                    transition: "transform 0.2s, box-shadow 0.2s",
+                                    border: "1px solid #e0e0e0",
+                                    background: "#fff",
+                                    textAlign: "left",
+                                    width: "100%"
+                                }}
+                                onMouseEnter={(e) => {
+                                    e.currentTarget.style.transform = "translateY(-2px)";
+                                    e.currentTarget.style.boxShadow = "0 4px 8px rgba(0,0,0,0.1)";
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.style.transform = "translateY(0)";
+                                    e.currentTarget.style.boxShadow = "none";
+                                }}
+                            >
+                                <div>
+                                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                                        <h4 style={{ margin: 0 }}>{registration.electionTitle || registration.election?.title || "Unknown Election"}</h4>
+                                        <span style={{
+                                            padding: "4px 12px",
+                                            borderRadius: "12px",
+                                            fontSize: "12px",
+                                            fontWeight: "600",
+                                            color: "#fff",
+                                            backgroundColor: getStatusColor(registration.status)
+                                        }}>
+                                            {getStatusLabel(registration.status)}
+                                        </span>
+                                    </div>
+                                    <p className="muted small">Party: <strong>{registration.partyName}</strong></p>
+                                    <p className="muted small">Manifesto: {registration.manifesto || "N/A"}</p>
+                                    <p className="muted small">Applied on: {registration.createdAt ? new Date(registration.createdAt).toLocaleString() : "N/A"}</p>
+                                    {registration.blockchainCandidateId && (
                                         <p className="muted small" style={{ color: "#28a745", fontWeight: "600" }}>
-                                            ✓ Registered on Blockchain (ID: {selectedRegistrationDetail.blockchainCandidateId})
+                                            ✓ Registered on Blockchain (ID: {registration.blockchainCandidateId})
                                         </p>
                                     )}
-                                    {selectedRegistrationDetail.status === "REJECTED" && selectedRegistrationDetail.remarks && (
-                                        <div style={{
-                                            marginTop: "10px",
-                                            padding: "10px",
-                                            backgroundColor: "#fff3cd",
-                                            borderLeft: "3px solid #ffc107",
-                                            borderRadius: "4px"
-                                        }}>
-                                            <p className="muted small" style={{ margin: 0, color: "#856404" }}>
-                                                <strong>Rejection Reason:</strong> {selectedRegistrationDetail.remarks}
-                                            </p>
-                                        </div>
-                                    )}
+                                    <p className="muted small" style={{ marginTop: "10px", color: "#007bff", fontWeight: "600" }}>
+                                        👁️ Click to view election details
+                                    </p>
                                 </div>
-                            </div>
+                            </button>
+                        );
+                    })}
+                </div>
+            )}
 
-                            {/* Election Information Section */}
-                            {(() => {
-                                const electionInfo = selectedRegistrationDetail.electionId || selectedRegistrationDetail.election;
-                                return electionInfo;
-                            })() && (
+            {selectedRegistrationDetail && (
+                <div className="panel soft">
+                    <div className="panel-header">
+                        <div>
+                            <p className="eyebrow">Registration Details</p>
+                            <h3>{selectedRegistrationDetail.electionTitle || selectedRegistrationDetail.election?.title || "Election Details"}</h3>
+                        </div>
+                        <button className="ghost-btn" onClick={() => setSelectedRegistrationDetail(null)}>Close</button>
+                    </div>
+
+                    <div style={{ display: "grid", gap: "20px" }}>
+                        {/* Registration Status Section */}
+                        <div style={{ padding: "15px", backgroundColor: "#f8f9fa", borderRadius: "8px" }}>
+                            <h4 style={{ marginTop: 0 }}>Your Registration Status</h4>
+                            <div style={{ display: "grid", gap: "10px" }}>
+                                <p className="muted small">Status: <span style={{
+                                    padding: "4px 12px",
+                                    borderRadius: "12px",
+                                    fontSize: "12px",
+                                    fontWeight: "600",
+                                    color: "#fff",
+                                    backgroundColor: selectedRegistrationDetail.status === "VERIFIED" ? "#28a745" : selectedRegistrationDetail.status === "PENDING" ? "#ffc107" : "#dc3545"
+                                }}>
+                                    {selectedRegistrationDetail.status === "VERIFIED" ? "Approved" : selectedRegistrationDetail.status === "PENDING" ? "Under Review" : "Rejected"}
+                                </span></p>
+                                <p className="muted small">Party: <strong>{selectedRegistrationDetail.partyName}</strong></p>
+                                <p className="muted small">Manifesto: {selectedRegistrationDetail.manifesto || "N/A"}</p>
+                                <p className="muted small">Applied on: {selectedRegistrationDetail.createdAt ? new Date(selectedRegistrationDetail.createdAt).toLocaleString() : "N/A"}</p>
+                                {selectedRegistrationDetail.blockchainCandidateId && (
+                                    <p className="muted small" style={{ color: "#28a745", fontWeight: "600" }}>
+                                        ✓ Registered on Blockchain (ID: {selectedRegistrationDetail.blockchainCandidateId})
+                                    </p>
+                                )}
+                                {selectedRegistrationDetail.status === "REJECTED" && selectedRegistrationDetail.remarks && (
+                                    <div style={{
+                                        marginTop: "10px",
+                                        padding: "10px",
+                                        backgroundColor: "#fff3cd",
+                                        borderLeft: "3px solid #ffc107",
+                                        borderRadius: "4px"
+                                    }}>
+                                        <p className="muted small" style={{ margin: 0, color: "#856404" }}>
+                                            <strong>Rejection Reason:</strong> {selectedRegistrationDetail.remarks}
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Election Information Section */}
+                        {(() => {
+                            const electionInfo = selectedRegistrationDetail.electionId || selectedRegistrationDetail.election;
+                            return electionInfo;
+                        })() && (
                                 <div style={{ padding: "15px", backgroundColor: "#f8f9fa", borderRadius: "8px" }}>
                                     <h4 style={{ marginTop: 0 }}>Election Information</h4>
                                     <div style={{ display: "grid", gap: "10px" }}>
@@ -1660,140 +1745,140 @@ function VoterHome() {
                                 </div>
                             )}
 
-                            {/* Results Section */}
-                           <div style={{ padding: "15px", backgroundColor: "#f8f9fa", borderRadius: "8px" }}>
-  <h4 style={{ marginTop: 0 }}>Election Results</h4>
-  {(() => {
-    const electionInfo = selectedRegistrationDetail.electionId || selectedRegistrationDetail.election;
-    const now = new Date();
-    const end = electionInfo?.electionEnd ? new Date(electionInfo.electionEnd) : null;
-    const isCompleted = end && now > end;
-
-    // 1. Check if election is still active
-    if (!isCompleted) {
-      return (
-        <div className="notice info" style={{ marginTop: "10px" }}>
-          Results will be available after the election ends.
-        </div>
-      );
-    }
-
-    // 2. Determine which data source to use
-    if (myRegistrationResultsLoading || resultsLoading) {
-      return <p className="muted">Loading results...</p>;
-    }
-
-    if (myRegistrationResultsError) {
-      return (
-        <div className="notice warning" style={{ marginTop: "10px" }}>
-          {myRegistrationResultsError}
-        </div>
-      );
-    }
-
-    // Identify the correct results object
-    const match = myRegistrationElectionResults || results.find((r) => Number(r.electionId) === Number(electionInfo?.electionId));
-
-    if (!match || !Array.isArray(match.candidates)) {
-      return (
-        <div className="notice info" style={{ marginTop: "10px" }}>
-          Results not available for this election.
-        </div>
-      );
-    }
-
-    // 3. Process and Render Data
-    const totalVotes = match.candidates.reduce((sum, c) => sum + (c.voteCount || 0), 0);
-    const sortedCandidates = [...match.candidates].sort((a, b) => (b.voteCount || 0) - (a.voteCount || 0));
-
-    if (sortedCandidates.length === 0) {
-      return (
-        <div className="notice info" style={{ marginTop: "10px" }}>
-          No candidates registered for this election.
-        </div>
-      );
-    }
-
-    return (
-      <div style={{ marginTop: "10px" }}>
-        <p className="muted small">
-          Total Candidates: {sortedCandidates.length} | Total Votes: {totalVotes}
-        </p>
-        <h3 style={{ marginBottom: "15px" }}>Vote Distribution</h3>
-        
-        <div className="results-list">
-          {sortedCandidates.map((candidate, index) => {
-            const voteCount = candidate.voteCount || 0;
-            const percentage = totalVotes > 0 ? ((voteCount / totalVotes) * 100).toFixed(2) : 0;
-            const isWinner = index === 0 && voteCount > 0;
-
-            return (
-              <div
-                key={candidate.candidateId ?? candidate.candidateMongoId ?? index}
-                style={{
-                  padding: "15px 20px",
-                  marginBottom: "12px",
-                  border: "1px solid #e0e0e0",
-                  borderRadius: "8px",
-                  backgroundColor: isWinner ? "#f0f8ff" : "#fff",
-                }}
-              >
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "15px" }}>
-                    <span style={{
-                      fontSize: "20px",
-                      fontWeight: "bold",
-                      color: isWinner ? "#28a745" : "#666",
-                      minWidth: "30px"
-                    }}>
-                      #{index + 1}
-                    </span>
-                    <div>
-                      <h4 style={{ margin: 0, fontSize: "18px" }}>
-                        {isWinner && "🏆 "}
-                        {candidate.name}
-                      </h4>
-                    </div>
-                  </div>
-                  <div style={{ textAlign: "right" }}>
-                    <div style={{ fontSize: "24px", fontWeight: "bold", color: "#333" }}>
-                      {voteCount}
-                    </div>
-                    <div className="muted small">{percentage}%</div>
-                  </div>
-                </div>
-
-                {totalVotes > 0 && (
-                  <div style={{ height: "8px", backgroundColor: "#f0f0f0", borderRadius: "4px", overflow: "hidden" }}>
-                    <div style={{
-                      height: "100%",
-                      width: `${percentage}%`,
-                      backgroundColor: isWinner ? "#28a745" : "#007bff",
-                      transition: "width 0.3s ease"
-                    }} />
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-
-        {totalVotes === 0 && (
-          <div className="notice warning" style={{ marginTop: "20px" }}>
-            No votes have been cast yet in this election.
-          </div>
-        )}
-      </div>
-    );
-  })()}
-</div>
-                            {/* Active/Upcoming Election Notice */}
+                        {/* Results Section */}
+                        <div style={{ padding: "15px", backgroundColor: "#f8f9fa", borderRadius: "8px" }}>
+                            <h4 style={{ marginTop: 0 }}>Election Results</h4>
                             {(() => {
                                 const electionInfo = selectedRegistrationDetail.electionId || selectedRegistrationDetail.election;
                                 const now = new Date();
                                 const end = electionInfo?.electionEnd ? new Date(electionInfo.electionEnd) : null;
-                                return (!end || now <= end) && selectedRegistrationDetail.status === "VERIFIED";
-                            })() && (
+                                const isCompleted = end && now > end;
+
+                                // 1. Check if election is still active
+                                if (!isCompleted) {
+                                    return (
+                                        <div className="notice info" style={{ marginTop: "10px" }}>
+                                            Results will be available after the election ends.
+                                        </div>
+                                    );
+                                }
+
+                                // 2. Determine which data source to use
+                                if (myRegistrationResultsLoading || resultsLoading) {
+                                    return <p className="muted">Loading results...</p>;
+                                }
+
+                                if (myRegistrationResultsError) {
+                                    return (
+                                        <div className="notice warning" style={{ marginTop: "10px" }}>
+                                            {myRegistrationResultsError}
+                                        </div>
+                                    );
+                                }
+
+                                // Identify the correct results object
+                                const match = myRegistrationElectionResults || results.find((r) => Number(r.electionId) === Number(electionInfo?.electionId));
+
+                                if (!match || !Array.isArray(match.candidates)) {
+                                    return (
+                                        <div className="notice info" style={{ marginTop: "10px" }}>
+                                            Results not available for this election.
+                                        </div>
+                                    );
+                                }
+
+                                // 3. Process and Render Data
+                                const totalVotes = match.candidates.reduce((sum, c) => sum + (c.voteCount || 0), 0);
+                                const sortedCandidates = [...match.candidates].sort((a, b) => (b.voteCount || 0) - (a.voteCount || 0));
+
+                                if (sortedCandidates.length === 0) {
+                                    return (
+                                        <div className="notice info" style={{ marginTop: "10px" }}>
+                                            No candidates registered for this election.
+                                        </div>
+                                    );
+                                }
+
+                                return (
+                                    <div style={{ marginTop: "10px" }}>
+                                        <p className="muted small">
+                                            Total Candidates: {sortedCandidates.length} | Total Votes: {totalVotes}
+                                        </p>
+                                        <h3 style={{ marginBottom: "15px" }}>Vote Distribution</h3>
+
+                                        <div className="results-list">
+                                            {sortedCandidates.map((candidate, index) => {
+                                                const voteCount = candidate.voteCount || 0;
+                                                const percentage = totalVotes > 0 ? ((voteCount / totalVotes) * 100).toFixed(2) : 0;
+                                                const isWinner = index === 0 && voteCount > 0;
+
+                                                return (
+                                                    <div
+                                                        key={candidate.candidateId ?? candidate.candidateMongoId ?? index}
+                                                        style={{
+                                                            padding: "15px 20px",
+                                                            marginBottom: "12px",
+                                                            border: "1px solid #e0e0e0",
+                                                            borderRadius: "8px",
+                                                            backgroundColor: isWinner ? "#f0f8ff" : "#fff",
+                                                        }}
+                                                    >
+                                                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
+                                                            <div style={{ display: "flex", alignItems: "center", gap: "15px" }}>
+                                                                <span style={{
+                                                                    fontSize: "20px",
+                                                                    fontWeight: "bold",
+                                                                    color: isWinner ? "#28a745" : "#666",
+                                                                    minWidth: "30px"
+                                                                }}>
+                                                                    #{index + 1}
+                                                                </span>
+                                                                <div>
+                                                                    <h4 style={{ margin: 0, fontSize: "18px" }}>
+                                                                        {isWinner && "🏆 "}
+                                                                        {candidate.name}
+                                                                    </h4>
+                                                                </div>
+                                                            </div>
+                                                            <div style={{ textAlign: "right" }}>
+                                                                <div style={{ fontSize: "24px", fontWeight: "bold", color: "#333" }}>
+                                                                    {voteCount}
+                                                                </div>
+                                                                <div className="muted small">{percentage}%</div>
+                                                            </div>
+                                                        </div>
+
+                                                        {totalVotes > 0 && (
+                                                            <div style={{ height: "8px", backgroundColor: "#f0f0f0", borderRadius: "4px", overflow: "hidden" }}>
+                                                                <div style={{
+                                                                    height: "100%",
+                                                                    width: `${percentage}%`,
+                                                                    backgroundColor: isWinner ? "#28a745" : "#007bff",
+                                                                    transition: "width 0.3s ease"
+                                                                }} />
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+
+                                        {totalVotes === 0 && (
+                                            <div className="notice warning" style={{ marginTop: "20px" }}>
+                                                No votes have been cast yet in this election.
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })()}
+                        </div>
+                        {/* Active/Upcoming Election Notice */}
+                        {(() => {
+                            const electionInfo = selectedRegistrationDetail.electionId || selectedRegistrationDetail.election;
+                            const now = new Date();
+                            const end = electionInfo?.electionEnd ? new Date(electionInfo.electionEnd) : null;
+                            return (!end || now <= end) && selectedRegistrationDetail.status === "VERIFIED";
+                        })() && (
                                 <div style={{
                                     padding: "15px",
                                     backgroundColor: "#d4edda",
@@ -1805,51 +1890,51 @@ function VoterHome() {
                                     </p>
                                 </div>
                             )}
-                        </div>
-                    </div>
-                )}
-            </section>
-        );
-
-        const renderPastVotesTab = () => (
-            <section className="panel">
-                <div className="panel-header">
-                    <div>
-                        <p className="eyebrow">Voting history</p>
-                        <h2>Past Votes</h2>
                     </div>
                 </div>
+            )}
+        </section>
+    );
+
+    const renderPastVotesTab = () => (
+        <section className="panel">
+            <div className="panel-header">
+                <div>
+                    <p className="eyebrow">Voting history</p>
+                    <h2>Past Votes</h2>
+                </div>
+            </div>
 
 
-                {!isVerified ? (
-                    <div className="notice warning">
-                        Get your profile approved to view your voting history.
-                    </div>
-                ) : pastVotesLoading ? (
-                    <p className="muted">Loading your voting history...</p>
-                ) : pastVotes.length === 0 ? (
-                    <div className="notice info">You haven't cast any votes yet.</div>
-                ) : (
-                    <div className="votes-list">
-                        {pastVotes.map((vote, index) => (
-                            <div key={vote._id || index} className="vote-card">
-                                <div className="vote-header">
-                                    <h4>{vote.electionTitle || vote.election?.title || "Unknown Election"}</h4>
-                                    <span className="pill success">Voted</span>
-                                </div>
-                                <div className="vote-details">
-                                    <p className="muted small">
-                                        Voted on: {vote.timestamp ? new Date(vote.timestamp).toLocaleString() : "N/A"}
-                                    </p>
-                                    <p className="muted small">
-                                        Transaction: {vote.transactionHash ? vote.transactionHash.substring(0, 20) + "..." : "Recorded"}
-                                    </p>
-                                </div>
+            {!isVerified ? (
+                <div className="notice warning">
+                    Get your profile approved to view your voting history.
+                </div>
+            ) : pastVotesLoading ? (
+                <p className="muted">Loading your voting history...</p>
+            ) : pastVotes.length === 0 ? (
+                <div className="notice info">You haven't cast any votes yet.</div>
+            ) : (
+                <div className="votes-list">
+                    {pastVotes.map((vote, index) => (
+                        <div key={vote._id || index} className="vote-card">
+                            <div className="vote-header">
+                                <h4>{vote.electionTitle || vote.election?.title || "Unknown Election"}</h4>
+                                <span className="pill success">Voted</span>
                             </div>
-                        ))}
-                    </div>
-                )}
-            </section>
+                            <div className="vote-details">
+                                <p className="muted small">
+                                    Voted on: {vote.timestamp ? new Date(vote.timestamp).toLocaleString() : "N/A"}
+                                </p>
+                                <p className="muted small">
+                                    Transaction: {vote.transactionHash ? vote.transactionHash.substring(0, 20) + "..." : "Recorded"}
+                                </p>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
+        </section>
     );
 
     return (
