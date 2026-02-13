@@ -547,12 +547,14 @@ function VoterHome() {
         }
         setPastVotesLoading(true);
         try {
-            const { data } = await axios.get(`${API_BASE}/votes/my-votes`, {
+            const { data } = await axios.get(`${API_BASE}/votes/history/me`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
-            const votes = Array.isArray(data) ? data : data.votes || [];
+            console.log('Vote history response:', data);
+            const votes = data.history || [];
             setPastVotes(votes);
         } catch (err) {
+            console.error('Error fetching vote history:', err);
             setPastVotes([]);
         } finally {
             setPastVotesLoading(false);
@@ -1902,6 +1904,11 @@ function VoterHome() {
                 <div>
                     <p className="eyebrow">Voting history</p>
                     <h2>Past Votes</h2>
+                    {pastVotes.length > 0 && (
+                        <p className="muted small" style={{ marginTop: '0.5rem' }}>
+                            Total votes cast: {pastVotes.length}
+                        </p>
+                    )}
                 </div>
             </div>
 
@@ -1917,18 +1924,45 @@ function VoterHome() {
             ) : (
                 <div className="votes-list">
                     {pastVotes.map((vote, index) => (
-                        <div key={vote._id || index} className="vote-card">
+                        <div key={vote.voteId || index} className="vote-card">
                             <div className="vote-header">
-                                <h4>{vote.electionTitle || vote.election?.title || "Unknown Election"}</h4>
+                                <h4>{vote.election?.title || "Unknown Election"}</h4>
                                 <span className="pill success">Voted</span>
                             </div>
                             <div className="vote-details">
+                                
                                 <p className="muted small">
-                                    Voted on: {vote.timestamp ? new Date(vote.timestamp).toLocaleString() : "N/A"}
+                                    <strong>Voted on:</strong> {vote.votedAt ? new Date(vote.votedAt).toLocaleString('en-US', {
+                                        year: 'numeric',
+                                        month: 'long',
+                                        day: 'numeric',
+                                        hour: '2-digit',
+                                        minute: '2-digit'
+                                    }) : "N/A"}
                                 </p>
-                                <p className="muted small">
-                                    Transaction: {vote.transactionHash ? vote.transactionHash.substring(0, 20) + "..." : "Recorded"}
-                                </p>
+                                {vote.election?.end && (
+                                    <p className="muted small">
+                                        <strong>Election ended:</strong> {new Date(vote.election.end).toLocaleString('en-US', {
+                                            year: 'numeric',
+                                            month: 'long',
+                                            day: 'numeric'
+                                        })}
+                                    </p>
+                                )}
+                                {vote.election?.level && (
+                                    <p className="muted small">
+                                        <strong>Level:</strong> {vote.election.level}
+                                    </p>
+                                )}
+                                {vote.blockchainTx && (
+                                    <p className="muted small" style={{ 
+                                        overflow: 'hidden', 
+                                        textOverflow: 'ellipsis',
+                                        whiteSpace: 'nowrap'
+                                    }}>
+                                        <strong>Transaction:</strong> {vote.blockchainTx.substring(0, 10)}...{vote.blockchainTx.substring(vote.blockchainTx.length - 8)}
+                                    </p>
+                                )}
                             </div>
                         </div>
                     ))}

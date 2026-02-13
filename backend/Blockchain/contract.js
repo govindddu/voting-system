@@ -45,9 +45,13 @@ async function getCandidateVotes(electionId, candidateId) {
 
 module.exports = contract;
 module.exports.getCandidateVotes = getCandidateVotes;
+
+// Store reference to the actual contract method before exporting wrapper
+const _contractIsVerifiedVoter = contract.isVerifiedVoter.bind(contract);
+
 module.exports.isVerifiedVoter = async (voterAddress) => {
   try {
-    return await contract.isVerifiedVoter(voterAddress);
+    return await _contractIsVerifiedVoter(voterAddress);
   } catch (error) {
     console.error('Error checking verified voter:', error);
     return false;
