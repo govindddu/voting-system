@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const auth = require("../middleware/authMiddleware");
+const { protect } = require("../middleware/authMiddleware");
 
 const {
   createElection,
@@ -8,9 +8,9 @@ const {
 } = require("../controllers/electionController");
 
 // ADMIN → create election
-router.post("/", auth, createElection);
+router.post("/", protect, createElection);
 
 // ALL → view elections
-router.get("/", auth, getAllElections);
+router.get("/", protect, getAllElections);
 
 module.exports = router;

@@ -41,10 +41,15 @@ const electionSchema = new mongoose.Schema({
     required: true
   },
 
+  category: {
+    type: String,
+    trim: true
+  },
+
   status: {
     type: String,
-    enum: ["DRAFT", "UPCOMING", "ONGOING", "COMPLETED"],
-    default: "DRAFT"
+    enum: ["UPCOMING", "ONGOING", "COMPLETED"],
+    default: "UPCOMING"
   },
 
   createdBy: {

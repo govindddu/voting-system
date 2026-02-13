@@ -19,7 +19,8 @@ const createElection = async (req, res) => {
       level,
       electionStart,
       electionEnd,
-      candidateRegistrationLastDate
+      candidateRegistrationLastDate,
+      category
     } = req.body;
 
     // Basic validation
@@ -52,6 +53,7 @@ const createElection = async (req, res) => {
       electionStart,
       electionEnd,
       candidateRegistrationLastDate,
+      category,
       createdBy: req.user.id,
       blockchainTx: tx.hash,
       status: "UPCOMING"

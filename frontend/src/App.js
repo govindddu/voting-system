@@ -2,6 +2,8 @@ import React from "react";
 import { BrowserRouter, Routes, Route, Navigate, Link, useLocation } from "react-router-dom";
 import Login from "./pages/login.jsx";
 import Register from "./pages/register.jsx";
+import VerifyEmail from "./pages/verifyEmail.jsx";
+import ForgotPassword from "./pages/forgotPassword.jsx";
 import AdminHome from "./pages/adminHome.jsx";
 import VoterVerification from "./pages/voterVerification.jsx";
 import CandidateVerification from "./pages/candidateVerification.jsx";
@@ -33,6 +35,8 @@ const AuthLayout = () => (
           <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/verify-email" element={<VerifyEmail />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       </main>
@@ -52,7 +56,13 @@ const MainLayout = () => (
 
 function AppRouter() {
   const location = useLocation();
-  const isAuthRoute = ["/", "/login", "/register"].includes(location.pathname);
+  const isAuthRoute = [
+    "/",
+    "/login",
+    "/register",
+    "/verify-email",
+    "/forgot-password",
+  ].includes(location.pathname);
 
   return isAuthRoute ? <AuthLayout /> : <MainLayout />;
 }

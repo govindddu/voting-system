@@ -1,19 +1,20 @@
 const express = require("express");
 const router = express.Router();
-const auth = require("../middleware/authMiddleware");
+const { protect } = require("../middleware/authMiddleware");
 const uploadDocument = require("../middleware/uploadMiddleware"); // <-- your multer file
 
 const {
   registerCandidate,
   approveCandidate,
   getCandidatesByElection,
-  getAllCandidates
+  getAllCandidates,
+  getMyCandidateRegistrations
 } = require("../controllers/candidateController");
 
 // ✅ CANDIDATE → register for election (multipart/form-data)
 router.post(
   "/register",
-  auth,
+  protect,
   uploadDocument.fields([
     { name: "documentFile", maxCount: 1 },
     { name: "symbol", maxCount: 1 }
@@ -21,12 +22,15 @@ router.post(
   registerCandidate
 );
 
+// USER → get my candidate registrations
+router.get("/my-registrations", protect, getMyCandidateRegistrations);
+
 // ADMIN → list all candidates (for verification)
-router.get("/", auth, getAllCandidates);
+router.get("/", protect, getAllCandidates);
 
 // ADMIN → approve / reject candidate
-router.put("/:id/approve", auth, approveCandidate);
-router.get("/election/:electionMongoId", auth, getCandidatesByElection);
+router.put("/:id/approve", protect, approveCandidate);
+router.get("/election/:electionMongoId", protect, getCandidatesByElection);
 
 
 module.exports = router;

@@ -1,24 +1,29 @@
 const express = require("express");
 const router = express.Router();
-const auth = require("../middleware/authMiddleware");
+const { protect } = require("../middleware/authMiddleware");
 
-const { castVote, checkIfVoted, getVoterVote, checkWalletVerification,getElectionResults,getAllCompletedResults  } = require("../controllers/voteController");
+const { castVote, checkIfVoted, getVoterVote, checkWalletVerification, getElectionResults, getAllCompletedResults, getElectionResultsByMongoId } = require("../controllers/voteController");
 
 
 // VOTER → cast vote
-router.post("/cast", auth, castVote);
+router.post("/cast", protect, castVote);
 
 // VOTER → check if already voted
-router.post("/check-voted", auth, checkIfVoted);
+router.post("/check-voted", protect, checkIfVoted);
 
 // VOTER → check if wallet is verified on blockchain
-router.get("/check-wallet", auth, checkWalletVerification);
+router.get("/check-wallet", protect, checkWalletVerification);
 
-// VOTER → get their vote in an election
-router.get("/:electionMongoId", auth, getVoterVote);
-
-
+// Get results for completed elections
 router.get("/results/completed", getAllCompletedResults);
+
+// Get results for specific election by MongoDB ID
+router.get("/results/election/:electionMongoId", getElectionResultsByMongoId);
+
+// Get results by blockchain election ID
 router.get("/results/:electionMongoId", getElectionResults);
+
+// VOTER → get their vote in an election (must be last to avoid conflict)
+router.get("/:electionMongoId", protect, getVoterVote);
 
 module.exports = router;

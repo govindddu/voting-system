@@ -353,6 +353,75 @@ const getAllCompletedResults = async (req, res) => {
   }
 };
 
+// Get results for a specific election by MongoDB ID
+const getElectionResultsByMongoId = async (req, res) => {
+  try {
+    const { electionMongoId } = req.params;
+
+    // Find election
+    const election = await Election.findById(electionMongoId);
+    if (!election) {
+      return res.status(404).json({ message: "Election not found" });
+    }
+
+    const now = new Date();
+    const endDate = election.electionEnd ? new Date(election.electionEnd) : null;
+    if (!endDate || now <= endDate) {
+      return res.status(400).json({
+        message: "Election is still ongoing. Results will be available after the election ends."
+      });
+    }
+
+    const blockchainElectionId = Number(election.electionId);
+
+    // Get all candidates for this election
+    const dbCandidates = await Candidate.find({
+      electionId: election._id
+    });
+
+    const candidates = [];
+
+    for (const dbCandidate of dbCandidates) {
+      const blockchainCandidateId = dbCandidate.blockchainCandidateId
+        ? Number(dbCandidate.blockchainCandidateId)
+        : null;
+
+      let voteCount = 0;
+      if (blockchainElectionId && blockchainCandidateId) {
+        try {
+          // Use getCandidate function which returns {id, name, voteCount}
+          const candidateData = await contract.getCandidate(
+            blockchainElectionId,
+            blockchainCandidateId
+          );
+          voteCount = Number(candidateData.voteCount || candidateData[2] || 0);
+        } catch (err) {
+          console.error(`Error getting votes for candidate ${blockchainCandidateId}:`, err.message);
+          voteCount = 0;
+        }
+      }
+
+      candidates.push({
+        candidateMongoId: dbCandidate._id,
+        candidateId: blockchainCandidateId,
+        name: dbCandidate.partyName,
+        voteCount,
+        status: dbCandidate.status
+      });
+    }
+
+    res.json({
+      electionTitle: election.title,
+      electionId: blockchainElectionId,
+      candidates
+    });
+
+  } catch (err) {
+    console.error('Error in getElectionResultsByMongoId:', err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
 module.exports = {
   castVote,
   checkIfVoted,
@@ -360,4 +429,5 @@ module.exports = {
   checkWalletVerification,
   getElectionResults,
   getAllCompletedResults,
+  getElectionResultsByMongoId
 };
