@@ -422,6 +422,53 @@ const getElectionResultsByMongoId = async (req, res) => {
   }
 };
 
+const getMyVoteHistory = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    // 1️⃣ Find voter profile
+    const voter = await Voter.findOne({ userId });
+
+    if (!voter) {
+      return res.status(404).json({
+        message: "Voter profile not found"
+      });
+    }
+
+    // 2️⃣ Get all votes of this voter
+    const votes = await Vote.find({ voterId: voter._id })
+      .populate("electionId", "title level electionStart electionEnd")
+      .populate("candidateId", "partyName manifesto")
+      .sort({ createdAt: -1 });
+
+    // 3️⃣ Format response
+    const history = votes.map(v => ({
+      voteId: v._id,
+      election: {
+        id: v.electionId?._id,
+        title: v.electionId?.title,
+        level: v.electionId?.level,
+        start: v.electionId?.electionStart,
+        end: v.electionId?.electionEnd
+      },
+      candidate: {
+        name: v.candidateId?.partyName || "Unknown Candidate",
+        manifesto: v.candidateId?.manifesto
+      },
+      blockchainTx: v.blockchainTx,
+      votedAt: v.createdAt
+    }));
+
+    res.json({
+      totalVotes: history.length,
+      history
+    });
+
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
 module.exports = {
   castVote,
   checkIfVoted,
@@ -429,5 +476,6 @@ module.exports = {
   checkWalletVerification,
   getElectionResults,
   getAllCompletedResults,
-  getElectionResultsByMongoId
+  getElectionResultsByMongoId,
+  getMyVoteHistory,
 };
