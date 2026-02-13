@@ -588,8 +588,18 @@ function VoterHome() {
         setMyRegistrationResultsError("");
         setMyRegistrationElectionResults(null);
         try {
-            const { data } = await axios.get(`${API_BASE}/votes/results/election/${electionMongoId}`);
-            setMyRegistrationElectionResults(data);
+            const { data } = await axios.get(`${API_BASE}/votes/results/${electionMongoId}`);
+            const normalized = {
+                electionTitle: data?.electionTitle || "Election Results",
+                candidates: Array.isArray(data?.results)
+                    ? data.results.map((item) => ({
+                        candidateId: item.candidateId,
+                        name: item.candidateName || item.name || "Unknown",
+                        voteCount: Number(item.votes || 0)
+                    }))
+                    : []
+            };
+            setMyRegistrationElectionResults(normalized);
         } catch (err) {
             const backendMsg = err.response?.data?.message || err.response?.data?.error;
             setMyRegistrationResultsError(backendMsg || "Failed to load results for this election.");
@@ -1651,7 +1661,6 @@ function VoterHome() {
                             )}
 
                             {/* Results Section */}
-                            {false && (
                            <div style={{ padding: "15px", backgroundColor: "#f8f9fa", borderRadius: "8px" }}>
   <h4 style={{ marginTop: 0 }}>Election Results</h4>
   {(() => {
@@ -1778,7 +1787,6 @@ function VoterHome() {
     );
   })()}
 </div>
-                            )}
                             {/* Active/Upcoming Election Notice */}
                             {(() => {
                                 const electionInfo = selectedRegistrationDetail.electionId || selectedRegistrationDetail.election;
