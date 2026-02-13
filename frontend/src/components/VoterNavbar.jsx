@@ -5,6 +5,7 @@ const VoterNavbar = ({ activeTab, onTabChange, badge, onLogout }) => {
     const tabs = [
         { id: "profile", label: "Profile", icon: "👤" },
         { id: "elections", label: "Elections", icon: "🗳️" },
+        { id: "my-registrations", label: "My Registrations", icon: "📝" },
         { id: "results", label: "Results", icon: "📊" },
         { id: "past-votes", label: "Past Votes", icon: "📜" }
     ];

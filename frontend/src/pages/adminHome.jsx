@@ -11,7 +11,7 @@ const defaultForm = {
     candidateRegistrationLastDate: "",
     electionStart: "",
     electionEnd: "",
-    status: "DRAFT"
+    category: ""
 };
 
 function AdminHome() {
@@ -85,7 +85,7 @@ function AdminHome() {
         return "";
     };
 
-    const submitElection = async (targetStatus) => {
+    const submitElection = async () => {
         if (!token) {
             setStatus({ type: "error", message: "Please sign in as an admin to continue." });
             return;
@@ -101,8 +101,7 @@ function AdminHome() {
         setStatus({ type: "", message: "" });
 
         const payload = {
-            ...form,
-            status: targetStatus
+            ...form
         };
 
         try {
@@ -114,7 +113,7 @@ function AdminHome() {
 
             setStatus({
                 type: "success",
-                message: targetStatus === "DRAFT" ? "Election saved as draft." : "Election published as upcoming."
+                message: "Election created successfully."
             });
             setForm((prev) => ({ ...defaultForm, level: prev.level }));
             fetchElections();
@@ -190,7 +189,7 @@ function AdminHome() {
                         <p className="eyebrow">Election setup</p>
                         <h2>Add election details</h2>
                     </div>
-                    <span className="pill subtle">Draft or publish at the end</span>
+                    <span className="pill subtle">Create and publish election</span>
                 </div>
 
                 {status.message && <div className={statusClass}>{status.message}</div>}
@@ -215,6 +214,16 @@ function AdminHome() {
                                 <option value="STATE">State</option>
                                 <option value="NATIONAL">National</option>
                             </select>
+                        </label>
+
+                        <label>
+                            Category
+                            <input
+                                name="category"
+                                value={form.category}
+                                onChange={handleChange}
+                                placeholder="General, By-election, Special, etc."
+                            />
                         </label>
 
                         <label className="full">
@@ -265,19 +274,11 @@ function AdminHome() {
                     <div className="action-row">
                         <button
                             type="button"
-                            className="ghost-btn"
-                            onClick={() => submitElection("DRAFT")}
-                            disabled={saving}
-                        >
-                            {saving ? "Saving..." : "Save as draft"}
-                        </button>
-                        <button
-                            type="button"
                             className="submit-btn"
-                            onClick={() => submitElection("UPCOMING")}
+                            onClick={submitElection}
                             disabled={saving}
                         >
-                            {saving ? "Saving..." : "Publish"}
+                            {saving ? "Creating..." : "Create Election"}
                         </button>
                     </div>
                 </form>
@@ -295,7 +296,7 @@ function AdminHome() {
                 {listLoading ? (
                     <p className="muted">Loading elections...</p>
                 ) : elections.length === 0 ? (
-                    <p className="muted">No elections yet. Draft one above to get started.</p>
+                    <p className="muted">No elections yet. Create one above to get started.</p>
                 ) : (
                     <div className="election-list">
                         {elections.map((election) => {
@@ -303,7 +304,8 @@ function AdminHome() {
                             const title = details.title || "Untitled Election";
                             const description = details.description || "No description provided.";
                             const level = details.level || "NATIONAL";
-                            const status = details.status || "DRAFT";
+                            const category = details.category || "";
+                            const status = details.status || "UPCOMING";
                             const startDate = details.electionStart ? new Date(details.electionStart).toLocaleString() : "Invalid Date";
 
                             return (
@@ -311,10 +313,10 @@ function AdminHome() {
                                     <div>
                                         <h4>{title}</h4>
                                         <p className="muted">{description}</p>
-                                        <p className="muted small">Level: {level}</p>
+                                        <p className="muted small">Level: {level} {category && `| Category: ${category}`}</p>
                                     </div>
                                     <div className="row-meta">
-                                        <span className={`pill ${status === "DRAFT" ? "subtle" : status === "UPCOMING" ? "success" : ""}`}>
+                                        <span className={`pill ${status === "UPCOMING" ? "success" : status === "ONGOING" ? "success" : "subtle"}`}>
                                             {status}
                                         </span>
                                         <p className="muted small">Starts {startDate}</p>

@@ -91,6 +91,10 @@ function Login() {
                     />
                 </label>
 
+                <div className="auth-switch" style={{ justifyContent: "flex-start" }}>
+                    <Link to="/forgot-password">Forgot password?</Link>
+                </div>
+
                 <button className="submit-btn" type="submit" disabled={loading}>
                     {loading ? "Signing in..." : "Sign in"}
                 </button>

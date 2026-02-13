@@ -195,9 +195,32 @@ const getAllCandidates = async (req, res) => {
   }
 };
 
+// =====================================
+// USER → Get My Candidate Registrations
+// =====================================
+const getMyCandidateRegistrations = async (req, res) => {
+  try {
+    const candidates = await Candidate.find({ userId: req.user.id })
+      .populate("electionId", "title level description electionStart electionEnd")
+      .sort({ createdAt: -1 });
+
+    // Format response with election details
+    const result = candidates.map((c) => ({
+      ...c.toObject(),
+      electionTitle: c.electionId?.title || "Unknown Election"
+    }));
+
+    return res.json(result);
+  } catch (err) {
+    console.error("GET_MY_REGISTRATIONS_ERROR", err);
+    return res.status(500).json({ message: err.message || "Internal server error" });
+  }
+};
+
 module.exports = {
   registerCandidate,
   approveCandidate,
   getCandidatesByElection,
-  getAllCandidates
+  getAllCandidates,
+  getMyCandidateRegistrations
 };

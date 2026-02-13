@@ -13,8 +13,7 @@ function Register() {
         email: "",
         phoneNumber: "",
         role: "VOTER",
-        password: "",
-        privateKey: ""
+        password: ""
     });
 
     const [loading, setLoading] = useState(false);
@@ -41,8 +40,7 @@ function Register() {
                     email: form.email,
                     phoneNumber: form.phoneNumber,
                     role: form.role,
-                    password: form.password,
-                    privateKey: form.privateKey
+                    password: form.password
                 },
                 {
                     headers: {
@@ -53,7 +51,7 @@ function Register() {
 
             console.log("Success response:", res.data);
             setMessage(res.data.message || "Registration successful");
-            setTimeout(() => navigate("/login"), 800);
+            setTimeout(() => navigate("/verify-email", { state: { email: form.email } }), 800);
 
         } catch (err) {
             console.error("REGISTER ERROR:", err.response?.data || err.message);
@@ -126,21 +124,6 @@ function Register() {
                         onChange={handleChange}
                         required
                     />
-                </label>
-
-                <label>
-                    Private Key
-                    <input
-                        type="text"
-                        name="privateKey"
-                        placeholder="64 hexadecimal characters"
-                        value={form.privateKey}
-                        onChange={handleChange}
-                        required
-                    />
-                    <p className="muted small" style={{ marginTop: "4px" }}>
-                        ⚠️ Enter your 64-character hexadecimal private key. This will be encrypted and cannot be changed after registration.
-                    </p>
                 </label>
 
                 <button type="submit" disabled={loading}>
