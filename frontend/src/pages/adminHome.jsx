@@ -23,6 +23,38 @@ function AdminHome() {
     const [elections, setElections] = useState([]);
     const [status, setStatus] = useState({ type: "", message: "" });
 
+    const getElectionStatus = (details = {}) => {
+        const startTime = details.electionStart ? new Date(details.electionStart).getTime() : Number.NaN;
+        const endTime = details.electionEnd ? new Date(details.electionEnd).getTime() : Number.NaN;
+        const now = Date.now();
+
+        if (!Number.isNaN(startTime) && !Number.isNaN(endTime)) {
+            if (now < startTime) return "UPCOMING";
+            if (now >= startTime && now < endTime) return "ONGOING";
+            return "COMPLETED";
+        }
+
+        const current = (details.status || "UPCOMING").toUpperCase();
+        if (current === "ENDED" || current === "CLOSED") return "COMPLETED";
+        if (current === "UPCOMING" || current === "ONGOING" || current === "COMPLETED") return current;
+        return "UPCOMING";
+    };
+
+    const electionSummary = useMemo(() => {
+        return elections.reduce(
+            (acc, election) => {
+                const details = election.details || election;
+                const current = getElectionStatus(details);
+                acc.total += 1;
+                if (current === "UPCOMING") acc.upcoming += 1;
+                else if (current === "ONGOING") acc.ongoing += 1;
+                else if (current === "COMPLETED") acc.completed += 1;
+                return acc;
+            },
+            { total: 0, upcoming: 0, ongoing: 0, completed: 0 }
+        );
+    }, [elections]);
+
     const handleLogout = () => {
         try {
             localStorage.removeItem("token");
@@ -143,43 +175,30 @@ function AdminHome() {
                 <div className="top-actions">
                     <Link className="ghost-btn" to="/admin/voters">Voter verification</Link>
                     <Link className="ghost-btn" to="/admin/candidates">Candidate verification</Link>
-                    <Link className="primary-btn" to="/register">Invite admin</Link>
                     <button className="ghost-btn" onClick={handleLogout}>Log out</button>
                 </div>
             </header>
 
-            <section className="option-grid">
-                <div className="option-card focus">
-                    <div>
-                        <p className="eyebrow">Priority</p>
-                        <h3>Create election</h3>
-                        <p className="muted">Add details and decide whether to save as draft or publish.</p>
-                    </div>
-                    <span className="pill success">Ready</span>
+            <section className="admin-metrics">
+                <div className="metric-card">
+                    <p className="eyebrow">Total</p>
+                    <h3>{listLoading ? "--" : electionSummary.total}</h3>
+                    <p className="muted small">All configured elections</p>
                 </div>
-                <div className="option-card muted-card">
-                    <div>
-                        <p className="eyebrow">Upcoming</p>
-                        <h3>Voter verification</h3>
-                        <p className="muted">Bulk KYC checks and document review.</p>
-                    </div>
-                    <span className="pill">Coming soon</span>
+                <div className="metric-card">
+                    <p className="eyebrow">Upcoming</p>
+                    <h3>{listLoading ? "--" : electionSummary.upcoming}</h3>
+                    <p className="muted small">Awaiting start date</p>
                 </div>
-                <div className="option-card muted-card">
-                    <div>
-                        <p className="eyebrow">Upcoming</p>
-                        <h3>Candidate approvals</h3>
-                        <p className="muted">Screen and approve candidates before ballots lock.</p>
-                    </div>
-                    <span className="pill">Coming soon</span>
+                <div className="metric-card">
+                    <p className="eyebrow">Ongoing</p>
+                    <h3>{listLoading ? "--" : electionSummary.ongoing}</h3>
+                    <p className="muted small">Voting in progress</p>
                 </div>
-                <div className="option-card muted-card">
-                    <div>
-                        <p className="eyebrow">Upcoming</p>
-                        <h3>Audit & logs</h3>
-                        <p className="muted">Immutable audit trails and exportable reports.</p>
-                    </div>
-                    <span className="pill">Coming soon</span>
+                <div className="metric-card">
+                    <p className="eyebrow">Completed</p>
+                    <h3>{listLoading ? "--" : electionSummary.completed}</h3>
+                    <p className="muted small">Closed elections</p>
                 </div>
             </section>
 
@@ -305,7 +324,7 @@ function AdminHome() {
                             const description = details.description || "No description provided.";
                             const level = details.level || "NATIONAL";
                             const category = details.category || "";
-                            const status = details.status || "UPCOMING";
+                            const electionStatus = getElectionStatus(details);
                             const startDate = details.electionStart ? new Date(details.electionStart).toLocaleString() : "Invalid Date";
 
                             return (
@@ -316,8 +335,8 @@ function AdminHome() {
                                         <p className="muted small">Level: {level} {category && `| Category: ${category}`}</p>
                                     </div>
                                     <div className="row-meta">
-                                        <span className={`pill ${status === "UPCOMING" ? "success" : status === "ONGOING" ? "success" : "subtle"}`}>
-                                            {status}
+                                        <span className={`pill ${electionStatus === "UPCOMING" ? "subtle" : electionStatus === "ONGOING" ? "success" : ""}`}>
+                                            {electionStatus}
                                         </span>
                                         <p className="muted small">Starts {startDate}</p>
                                     </div>

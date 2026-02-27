@@ -55,14 +55,7 @@ const registerCandidate = async (req, res) => {
       return res.status(400).json({ message: "Document file is required" });
     }
 
-    // ✅ 5️⃣ Upgrade role to CANDIDATE if not already
-
-    if (user.role !== "CANDIDATE") {
-      user.role = "CANDIDATE";
-      await user.save();
-    }
-
-    // 6️⃣ Create Candidate profile
+    // 5️⃣ Create Candidate profile
     const candidate = await Candidate.create({
       userId: req.user.id,
       electionId: election._id,
@@ -75,7 +68,7 @@ const registerCandidate = async (req, res) => {
     });
 
     return res.status(201).json({
-      message: "Candidate registered successfully (role updated to CANDIDATE)",
+      message: "Candidate registered successfully",
       candidate
     });
   } catch (err) {

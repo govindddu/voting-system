@@ -149,6 +149,18 @@ function VoterHome() {
             });
 
             const connectedWallet = accounts[0];
+            const registeredWallet = profile?.walletAddress;
+
+            if (
+                registeredWallet &&
+                connectedWallet &&
+                connectedWallet.trim().toLowerCase() !== registeredWallet.trim().toLowerCase()
+            ) {
+                setWalletAddress(connectedWallet);
+                setWalletConnected(false);
+                setWalletError("Connected wallet does not match your registered wallet address. Please switch MetaMask account.");
+                return;
+            }
 
             // Store the connected wallet for display purposes
             setWalletAddress(connectedWallet);

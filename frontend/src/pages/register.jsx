@@ -108,11 +108,7 @@ function Register() {
 
                 <label>
                     Role
-                    <select name="role" value={form.role} onChange={handleChange}>
-                        <option value="ADMIN">Admin</option>
-                        <option value="VOTER">Voter</option>
-
-                    </select>
+                    <input type="text" value="Voter" disabled readOnly />
                 </label>
 
                 <label>

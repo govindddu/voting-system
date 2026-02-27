@@ -91,6 +91,11 @@ const getAllElections = async (req, res) => {
       const dbElection = await Election.findOne({ electionId: i })
         .populate("createdBy", "fullName email");
 
+      // Skip elections without valid MongoDB data
+      if (!dbElection || !dbElection.title) {
+        continue;
+      }
+
       elections.push({
         electionId: i,
 
