@@ -105,6 +105,10 @@ function CandidateVerification() {
         { PENDING: 0, VERIFIED: 0, REJECTED: 0 }
     );
 
+    const pendingCount = counts.PENDING || 0;
+    const verifiedCount = counts.VERIFIED || 0;
+    const rejectedCount = counts.REJECTED || 0;
+
     return (
         <div className="admin-shell">
             <header className="admin-topbar">
@@ -128,6 +132,24 @@ function CandidateVerification() {
                         <h2>All candidates</h2>
                     </div>
                     <span className="pill subtle">Pending → review and approve</span>
+                </div>
+
+                <div className="admin-metrics compact">
+                    <div className="metric-card">
+                        <p className="eyebrow">Pending</p>
+                        <h3>{pendingCount}</h3>
+                        <p className="muted small">Needs action</p>
+                    </div>
+                    <div className="metric-card">
+                        <p className="eyebrow">Verified</p>
+                        <h3>{verifiedCount}</h3>
+                        <p className="muted small">Approved profiles</p>
+                    </div>
+                    <div className="metric-card">
+                        <p className="eyebrow">Rejected</p>
+                        <h3>{rejectedCount}</h3>
+                        <p className="muted small">Returned profiles</p>
+                    </div>
                 </div>
 
                 <div className="filter-row">
@@ -171,25 +193,29 @@ function CandidateVerification() {
                             const user = candidate.userId || {};
                             const tone = statusTone(candidate.status);
                             return (
-                                <div key={candidate._id} className="election-row">
-                                    <div>
+                                <div key={candidate._id} className="election-row verification-row">
+                                    <div className="verification-main">
                                         <h4>{user.fullName || "Unnamed candidate"}</h4>
-                                        <p className="muted small">Email: {user.email || "-"}</p>
-                                        <p className="muted small">Phone: {user.phoneNumber || "-"}</p>
-                                        <p className="muted small">Candidate ID: {candidate.candidateId}</p>
-                                        <p className="muted small">Party: {candidate.partyName || "-"}</p>
-                                        <p className="muted small">Qualification: {candidate.qualification || "-"}</p>
-                                        <p className="muted small">Experience: {candidate.experience || "-"}</p>
-                                        <p className="muted small">Address: {candidate.address}, {candidate.district}, {candidate.state}, {candidate.pincode}</p>
-                                        <p className="muted small">DOB: {candidate.dateOfBirth ? new Date(candidate.dateOfBirth).toLocaleDateString() : "-"}</p>
-                                        <p className="muted small">Document: {renderDocLink(candidate)}</p>
-                                        {candidate.walletAddress && <p className="muted small">Wallet: {candidate.walletAddress}</p>}
-                                        {candidate.documentType && <p className="muted small">Document type: {candidate.documentType}</p>}
-                                        <p className="muted small">Submitted: {candidate.createdAt ? new Date(candidate.createdAt).toLocaleString() : "-"}</p>
+                                        <div className="verification-grid">
+                                            <p className="muted small"><strong>Email:</strong> {user.email || "-"}</p>
+                                            <p className="muted small"><strong>Phone:</strong> {user.phoneNumber || "-"}</p>
+                                            <p className="muted small"><strong>Candidate ID:</strong> {candidate.candidateId}</p>
+                                            <p className="muted small"><strong>Party:</strong> {candidate.partyName || "-"}</p>
+                                            <p className="muted small"><strong>Qualification:</strong> {candidate.qualification || "-"}</p>
+                                            <p className="muted small"><strong>Experience:</strong> {candidate.experience || "-"}</p>
+                                            <p className="muted small"><strong>Address:</strong> {candidate.address}, {candidate.district}, {candidate.state}, {candidate.pincode}</p>
+                                            <p className="muted small"><strong>DOB:</strong> {candidate.dateOfBirth ? new Date(candidate.dateOfBirth).toLocaleDateString() : "-"}</p>
+                                            <p className="muted small"><strong>Document:</strong> {renderDocLink(candidate)}</p>
+                                            {candidate.walletAddress && <p className="muted small"><strong>Wallet:</strong> {candidate.walletAddress}</p>}
+                                            {candidate.documentType && <p className="muted small"><strong>Document type:</strong> {candidate.documentType}</p>}
+                                            <p className="muted small"><strong>Submitted:</strong> {candidate.createdAt ? new Date(candidate.createdAt).toLocaleString() : "-"}</p>
+                                        </div>
                                     </div>
-                                    <div className="row-meta" style={{ gap: "10px" }}>
+                                    <div className="row-meta verification-meta">
                                         <span className={`pill ${tone}`}>{candidate.status}</span>
-                                        {candidate.remarks && <p className="muted small">Remarks: {candidate.remarks}</p>}
+                                        {candidate.status === "REJECTED" && candidate.remarks && (
+                                            <p className="muted small">Remarks: {candidate.remarks}</p>
+                                        )}
                                         <input
                                             className="remarks-input"
                                             placeholder={candidate.status === "VERIFIED" ? "Remarks (required for rejection)" : "Remarks (optional)"}

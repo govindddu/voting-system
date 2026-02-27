@@ -105,6 +105,10 @@ function VoterVerification() {
         { PENDING: 0, VERIFIED: 0, REJECTED: 0 }
     );
 
+    const pendingCount = counts.PENDING || 0;
+    const verifiedCount = counts.VERIFIED || 0;
+    const rejectedCount = counts.REJECTED || 0;
+
     return (
         <div className="admin-shell">
             <header className="admin-topbar">
@@ -128,6 +132,24 @@ function VoterVerification() {
                         <h2>All voters</h2>
                     </div>
                     <span className="pill subtle">Pending → review and approve</span>
+                </div>
+
+                <div className="admin-metrics compact">
+                    <div className="metric-card">
+                        <p className="eyebrow">Pending</p>
+                        <h3>{pendingCount}</h3>
+                        <p className="muted small">Needs action</p>
+                    </div>
+                    <div className="metric-card">
+                        <p className="eyebrow">Verified</p>
+                        <h3>{verifiedCount}</h3>
+                        <p className="muted small">Approved profiles</p>
+                    </div>
+                    <div className="metric-card">
+                        <p className="eyebrow">Rejected</p>
+                        <h3>{rejectedCount}</h3>
+                        <p className="muted small">Returned profiles</p>
+                    </div>
                 </div>
 
                 <div className="filter-row">
@@ -171,20 +193,22 @@ function VoterVerification() {
                             const user = voter.userId || {};
                             const tone = statusTone(voter.status);
                             return (
-                                <div key={voter._id} className="election-row">
-                                    <div>
+                                <div key={voter._id} className="election-row verification-row">
+                                    <div className="verification-main">
                                         <h4>{user.fullName || "Unnamed user"}</h4>
-                                        <p className="muted small">Email: {user.email || "-"}</p>
-                                        <p className="muted small">Phone: {user.phoneNumber || "-"}</p>
-                                        <p className="muted small">Voter ID: {voter.voterId}</p>
-                                        <p className="muted small">Address: {voter.address}, {voter.district}, {voter.state}, {voter.pincode}</p>
-                                        <p className="muted small">DOB: {voter.dateOfBirth ? new Date(voter.dateOfBirth).toLocaleDateString() : "-"}</p>
-                                        <p className="muted small">Document: {renderDocLink(voter)}</p>
-                                        {voter.walletAddress && <p className="muted small">Wallet: {voter.walletAddress}</p>}
-                                        {voter.documentType && <p className="muted small">Document type: {voter.documentType}</p>}
-                                        <p className="muted small">Submitted: {voter.createdAt ? new Date(voter.createdAt).toLocaleString() : "-"}</p>
+                                        <div className="verification-grid">
+                                            <p className="muted small"><strong>Email:</strong> {user.email || "-"}</p>
+                                            <p className="muted small"><strong>Phone:</strong> {user.phoneNumber || "-"}</p>
+                                            <p className="muted small"><strong>Voter ID:</strong> {voter.voterId}</p>
+                                            <p className="muted small"><strong>DOB:</strong> {voter.dateOfBirth ? new Date(voter.dateOfBirth).toLocaleDateString() : "-"}</p>
+                                            <p className="muted small"><strong>Address:</strong> {voter.address}, {voter.district}, {voter.state}, {voter.pincode}</p>
+                                            <p className="muted small"><strong>Document:</strong> {renderDocLink(voter)}</p>
+                                            {voter.walletAddress && <p className="muted small"><strong>Wallet:</strong> {voter.walletAddress}</p>}
+                                            {voter.documentType && <p className="muted small"><strong>Document type:</strong> {voter.documentType}</p>}
+                                            <p className="muted small"><strong>Submitted:</strong> {voter.createdAt ? new Date(voter.createdAt).toLocaleString() : "-"}</p>
+                                        </div>
                                     </div>
-                                    <div className="row-meta" style={{ gap: "10px" }}>
+                                    <div className="row-meta verification-meta">
                                         <span className={`pill ${tone}`}>{voter.status}</span>
                                         {voter.remarks && <p className="muted small">Remarks: {voter.remarks}</p>}
                                         <input

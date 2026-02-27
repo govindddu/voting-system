@@ -360,6 +360,36 @@ a:hover {
   gap: 16px;
 }
 
+.admin-metrics {
+  margin: 0 0 22px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 14px;
+}
+
+.admin-metrics.compact {
+  margin-top: 2px;
+}
+
+.metric-card {
+  padding: 16px;
+  border-radius: var(--radius-sm);
+  border: 2px solid var(--border);
+  background: linear-gradient(135deg, var(--panel) 0%, var(--bg-secondary) 100%);
+  box-shadow: var(--shadow-sm);
+}
+
+.metric-card h3 {
+  margin: 4px 0 2px;
+  font-size: 30px;
+  line-height: 1;
+  color: var(--accent-strong);
+}
+
+.metric-card p {
+  margin: 0;
+}
+
 .option-card {
   padding: 18px;
   border-radius: var(--radius-sm);
@@ -522,6 +552,44 @@ a:hover {
   transition: all 0.3s ease;
 }
 
+.verification-row {
+  align-items: flex-start;
+  gap: 22px;
+}
+
+.verification-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.verification-main h4 {
+  margin-bottom: 10px;
+}
+
+.verification-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 8px 14px;
+}
+
+.verification-grid p {
+  margin: 0;
+}
+
+.verification-meta {
+  min-width: 260px;
+  gap: 10px;
+}
+
+.verification-meta .action-row {
+  justify-content: stretch;
+  padding-top: 0;
+}
+
+.verification-meta .action-row button {
+  flex: 1;
+}
+
 .election-row:hover {
   background: linear-gradient(135deg, var(--bg) 0%, rgba(45, 143, 95, 0.05) 100%);
   border-color: var(--accent);
@@ -622,6 +690,10 @@ a:hover {
     padding: 18px;
   }
 
+  .admin-metrics {
+    grid-template-columns: 1fr;
+  }
+
   .action-row {
     flex-direction: column;
     align-items: stretch;
@@ -639,6 +711,14 @@ a:hover {
   .row-meta {
     width: 100%;
     text-align: left;
+  }
+
+  .verification-meta {
+    min-width: 0;
+  }
+
+  .verification-grid {
+    grid-template-columns: 1fr;
   }
 
   .form-grid {
