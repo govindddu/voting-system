@@ -173,6 +173,17 @@ function VoterHome() {
 
     const openVotePanel = async (election) => {
         try {
+            if (profileStatus !== "VERIFIED") {
+                setVoteSelection(null);
+                setVoteMessage({
+                    type: "error",
+                    text: profileStatus === "REJECTED"
+                        ? "❌ Your profile is rejected. You cannot vote until admin approves it."
+                        : "❌ Your profile is not approved yet. Voting is blocked until approval."
+                });
+                return;
+            }
+
             setVoteSelection(election);
             setVoteMessage({ type: "", text: "" });
             setVoteLoading(true);
@@ -1183,6 +1194,7 @@ function VoterHome() {
                             const canRegister = isVerified && !isRegClosed && (election.status === "UPCOMING" || election.status === "ACTIVE");
                             const canVote = election.status === "ACTIVE" && election.startDate && election.endDate &&
                                 new Date() >= election.startDate && new Date() <= election.endDate;
+                            const canVoteNow = canVote && profileStatus === "VERIFIED";
 
                             return (
                                 <div key={election.id} className={`election-card-enhanced ${getStatusClass(election.status)}`}>
@@ -1242,14 +1254,22 @@ function VoterHome() {
 
                                         {canVote && (
                                             <button
-                                                className="ecard-btn vote"
+                                                className={`ecard-btn vote ${!canVoteNow ? "disabled" : ""}`}
+                                                disabled={!canVoteNow}
                                                 onClick={() => openVotePanel(election)}
+                                                title={
+                                                    profileStatus === "REJECTED"
+                                                        ? "Profile rejected. Voting is blocked until admin approval"
+                                                        : profileStatus !== "VERIFIED"
+                                                            ? "Profile approval required for voting"
+                                                            : "Click to vote"
+                                                }
                                             >
                                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                                     <path d="M9 12l2 2 4-4" />
                                                     <rect x="3" y="3" width="18" height="18" rx="2" />
                                                 </svg>
-                                                Vote Now
+                                                {profileStatus === "REJECTED" ? "Voting blocked" : profileStatus !== "VERIFIED" ? "Approval required" : "Vote Now"}
                                             </button>
                                         )}
                                     </div>

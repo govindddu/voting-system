@@ -3,6 +3,7 @@ const Candidate = require("../models/Candidate.js");
 const Election = require("../models/Election.js");
 const contract = require("../Blockchain/contract.js");
 const User = require("../models/User.js");
+const Voter = require("../models/Voter.js");
 const { decrypt } = require("../utils/encryption.js");
 
 // ==============================
@@ -46,6 +47,25 @@ const registerCandidate = async (req, res) => {
     const user = await User.findById(req.user.id);
     if (!user) {
       return res.status(404).json({ message: "User not found" });
+    }
+
+    const voterProfile = await Voter.findOne({ userId: req.user.id });
+    if (!voterProfile) {
+      return res.status(403).json({
+        message: "You must complete voter verification before candidate registration"
+      });
+    }
+
+    if (voterProfile.status === "REJECTED") {
+      return res.status(403).json({
+        message: "Your voter profile is rejected. Candidate registration is blocked until approved"
+      });
+    }
+
+    if (voterProfile.status !== "VERIFIED") {
+      return res.status(403).json({
+        message: "Your voter profile is not approved yet. Candidate registration is blocked"
+      });
     }
 
 
@@ -96,6 +116,24 @@ const approveCandidate = async (req, res) => {
 
     if (!candidate) {
       return res.status(404).json({ message: "Candidate not found" });
+    }
+
+    if (status === "REJECTED") {
+      const electionStart = candidate.electionId?.electionStart
+        ? new Date(candidate.electionId.electionStart)
+        : null;
+
+      if (!electionStart || Number.isNaN(electionStart.getTime())) {
+        return res.status(400).json({
+          message: "Election start date is missing or invalid"
+        });
+      }
+
+      if (new Date() >= electionStart) {
+        return res.status(400).json({
+          message: "Candidate can only be rejected before election starts"
+        });
+      }
     }
 
     // Update MongoDB status

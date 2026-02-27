@@ -26,6 +26,12 @@ const castVote = async (req, res) => {
       return res.status(404).json({ message: "Voter profile not found" });
     }
 
+    if (voter.status === "REJECTED") {
+      return res.status(403).json({
+        message: "Your voter profile is rejected. Voting is blocked until approved"
+      });
+    }
+
     if (voter.status !== "VERIFIED") {
       return res.status(403).json({ message: "Voter is not verified" });
     }

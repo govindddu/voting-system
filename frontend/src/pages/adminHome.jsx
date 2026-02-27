@@ -21,7 +21,13 @@ function AdminHome() {
     const [saving, setSaving] = useState(false);
     const [listLoading, setListLoading] = useState(true);
     const [elections, setElections] = useState([]);
+    const [selectedElection, setSelectedElection] = useState(null);
     const [status, setStatus] = useState({ type: "", message: "" });
+
+    const getElectionId = (election) => {
+        const details = election?.details || election || {};
+        return election?._id || election?.electionId || details._id || details.electionId || "";
+    };
 
     const getElectionStatus = (details = {}) => {
         const startTime = details.electionStart ? new Date(details.electionStart).getTime() : Number.NaN;
@@ -84,12 +90,25 @@ function AdminHome() {
             // Handle both direct array response and nested data structure
             const electionsArray = Array.isArray(data) ? data : (data.data || data.elections || []);
             setElections(electionsArray);
+            setSelectedElection((prev) => {
+                if (!electionsArray.length) return null;
+                if (!prev) return null;
+
+                const prevId = getElectionId(prev);
+                const matched = electionsArray.find((item) => {
+                    const itemId = getElectionId(item);
+                    return String(itemId) === String(prevId);
+                });
+
+                return matched || null;
+            });
         } catch (err) {
             setStatus({
                 type: "error",
                 message: err.response?.data?.message || "Could not load elections."
             });
             setElections([]);
+            setSelectedElection(null);
         } finally {
             setListLoading(false);
         }
@@ -160,6 +179,15 @@ function AdminHome() {
     };
 
     const statusClass = status.type === "success" ? "status success" : status.type === "error" ? "status error" : "";
+
+    const toggleElectionDetails = (election) => {
+        setSelectedElection((prev) => {
+            const prevId = getElectionId(prev);
+            const currentId = getElectionId(election);
+            if (String(prevId) === String(currentId)) return null;
+            return election;
+        });
+    };
 
     return (
         <div className="admin-shell">
@@ -326,13 +354,52 @@ function AdminHome() {
                             const category = details.category || "";
                             const electionStatus = getElectionStatus(details);
                             const startDate = details.electionStart ? new Date(details.electionStart).toLocaleString() : "Invalid Date";
+                            const electionKey = election._id || election.electionId;
+                            const selectedId = getElectionId(selectedElection);
+                            const rowId = getElectionId(election);
+                            const isSelected = String(rowId) === String(selectedId);
+                            const detailsFields = [
+                                ["Election ID", election.electionId || details.electionId || "-"],
+                                ["Title", details.title || "-"],
+                                ["Description", details.description || "-"],
+                                ["Status", electionStatus],
+                                ["Level", details.level || "-"],
+                                ["Category", details.category || "-"],
+                                ["Registration Last Date", details.candidateRegistrationLastDate ? new Date(details.candidateRegistrationLastDate).toLocaleString() : "-"],
+                                ["Election Start", details.electionStart ? new Date(details.electionStart).toLocaleString() : "-"],
+                                ["Election End", details.electionEnd ? new Date(details.electionEnd).toLocaleString() : "-"]
+                            ];
 
                             return (
-                                <div key={election._id || election.electionId} className="election-row">
-                                    <div>
+                                <div
+                                    key={electionKey}
+                                    className="election-row"
+                                    style={{ cursor: "pointer", border: isSelected ? "1px solid var(--accent)" : undefined }}
+                                    role="button"
+                                    tabIndex={0}
+                                    onClick={() => toggleElectionDetails(election)}
+                                    onKeyDown={(event) => {
+                                        if (event.key === "Enter" || event.key === " ") {
+                                            event.preventDefault();
+                                            toggleElectionDetails(election);
+                                        }
+                                    }}
+                                >
+                                    <div style={{ flex: 1, minWidth: 0 }}>
                                         <h4>{title}</h4>
                                         <p className="muted">{description}</p>
                                         <p className="muted small">Level: {level} {category && `| Category: ${category}`}</p>
+
+                                        {isSelected && (
+                                            <div style={{ marginTop: "0.6rem", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: "0.4rem 0.8rem" }}>
+                                                {detailsFields.map(([label, value]) => (
+                                                    <div key={label}>
+                                                        <p className="muted small" style={{ marginBottom: "0.1rem", fontSize: "11px" }}>{label}</p>
+                                                        <p>{String(value)}</p>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
                                     </div>
                                     <div className="row-meta">
                                         <span className={`pill ${electionStatus === "UPCOMING" ? "subtle" : electionStatus === "ONGOING" ? "success" : ""}`}>
