@@ -5,6 +5,7 @@ import Register from "./pages/register.jsx";
 import VerifyEmail from "./pages/verifyEmail.jsx";
 import ForgotPassword from "./pages/forgotPassword.jsx";
 import AdminHome from "./pages/adminHome.jsx";
+import AdminResults from "./pages/adminResults.jsx";
 import VoterVerification from "./pages/voterVerification.jsx";
 import CandidateVerification from "./pages/candidateVerification.jsx";
 import VoterHome from "./pages/voterHome.jsx";
@@ -47,6 +48,7 @@ const AuthLayout = () => (
 const MainLayout = () => (
   <Routes>
     <Route path="/admin" element={<AdminHome />} />
+    <Route path="/admin/results" element={<AdminResults />} />
     <Route path="/admin/voters" element={<VoterVerification />} />
     <Route path="/admin/candidates" element={<CandidateVerification />} />
     <Route path="/voter" element={<VoterHome />} />

@@ -1374,7 +1374,7 @@ function VoterHome() {
                         {voteLoading ? (
                             <p className="muted">Loading candidates...</p>
                         ) : voteCandidates.length === 0 ? (
-                            <p className="muted">No approved candidates found.</p>
+                            <p className="muted"></p>
                         ) : (
                             <div className="election-grid">
                                 {voteCandidates.map((c) => (
@@ -1503,7 +1503,7 @@ function VoterHome() {
                                 <div key={election.electionId} className="election-card">
                                     <div>
                                         <h4>{election.electionTitle}</h4>
-                                        <p className="muted small">Election ID: {election.electionId}</p>
+                                        <p className="muted small"></p>
                                         <p className="muted small">Total Candidates: {election.candidates.length}</p>
                                         <p className="muted small">Total Votes: {totalVotes}</p>
                                         {winner && winner.voteCount > 0 && (
