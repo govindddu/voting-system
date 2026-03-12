@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useNavigate as useNavigateRouter } from "react-router-dom";
 import axios from "axios";
 
 const API_BASE = process.env.REACT_APP_API_BASE_URL || "http://localhost:5000/api";
@@ -23,6 +23,7 @@ function AdminHome() {
     const [elections, setElections] = useState([]);
     const [selectedElection, setSelectedElection] = useState(null);
     const [status, setStatus] = useState({ type: "", message: "" });
+
 
     const getElectionId = (election) => {
         const details = election?.details || election || {};
@@ -114,6 +115,8 @@ function AdminHome() {
         }
     };
 
+
+
     useEffect(() => {
         fetchElections();
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -201,6 +204,7 @@ function AdminHome() {
                     </div>
                 </div>
                 <div className="top-actions">
+                    <Link className="ghost-btn" to="/admin/results">Results</Link>
                     <Link className="ghost-btn" to="/admin/voters">Voter verification</Link>
                     <Link className="ghost-btn" to="/admin/candidates">Candidate verification</Link>
                     <button className="ghost-btn" onClick={handleLogout}>Log out</button>
@@ -236,7 +240,7 @@ function AdminHome() {
                         <p className="eyebrow">Election setup</p>
                         <h2>Add election details</h2>
                     </div>
-                    <span className="pill subtle">Create and publish election</span>
+                    <span className="pill subtle">Create and publish elections</span>
                 </div>
 
                 {status.message && <div className={statusClass}>{status.message}</div>}
