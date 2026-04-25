@@ -6,6 +6,8 @@ const User = require("../models/User.js");
 const Voter = require("../models/Voter.js");
 const { decrypt } = require("../utils/encryption.js");
 
+const tokenRoles = ["USER", "VOTER", "CANDIDATE"];
+
 // ==============================
 // CANDIDATE → Register Candidate
 // ==============================
@@ -95,6 +97,72 @@ const registerCandidate = async (req, res) => {
     return res.status(500).json({ error: err.message });
   }
 };
+
+// =====================================
+// USER/CANDIDATE → Resubmit Rejected Candidate Registration
+// =====================================
+const resubmitCandidateRegistration = async (req, res) => {
+  try {
+    if (!tokenRoles.includes(req.user.role)) {
+      return res.status(403).json({ message: "Access denied" });
+    }
+
+    const candidate = await Candidate.findById(req.params.id).populate("electionId");
+    if (!candidate) {
+      return res.status(404).json({ message: "Candidate registration not found" });
+    }
+
+    if (String(candidate.userId) !== String(req.user.id)) {
+      return res.status(403).json({ message: "You can only update your own registration" });
+    }
+
+    if (candidate.status !== "REJECTED") {
+      return res.status(400).json({ message: "Only rejected registrations can be resubmitted" });
+    }
+
+    const election = candidate.electionId;
+    if (!election) {
+      return res.status(404).json({ message: "Election not found" });
+    }
+
+    if (new Date() > new Date(election.candidateRegistrationLastDate)) {
+      return res.status(400).json({ message: "Registration closed" });
+    }
+
+    const { partyName, manifesto, documentType } = req.body;
+
+    if (!partyName || !documentType) {
+      return res.status(400).json({ message: "Missing required fields" });
+    }
+
+    candidate.partyName = partyName;
+    candidate.manifesto = manifesto || "";
+    candidate.documentType = documentType.trim();
+
+    if (req.files?.documentFile?.[0]?.filename) {
+      candidate.documentFile = req.files.documentFile[0].filename;
+    }
+
+    if (req.files?.symbol?.[0]?.filename) {
+      candidate.symbol = req.files.symbol[0].filename;
+    }
+
+    candidate.status = "PENDING";
+    candidate.remarks = "";
+    candidate.blockchainCandidateId = undefined;
+    candidate.blockchainTx = undefined;
+
+    await candidate.save();
+
+    return res.json({
+      message: "Candidate registration resubmitted successfully",
+      candidate
+    });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+};
+
 // =====================================
 // ADMIN → Approve Candidate (Blockchain)
 // =====================================
@@ -232,7 +300,7 @@ const getAllCandidates = async (req, res) => {
 const getMyCandidateRegistrations = async (req, res) => {
   try {
     const candidates = await Candidate.find({ userId: req.user.id })
-      .populate("electionId", "title level description electionStart electionEnd")
+      .populate("electionId", "title level description electionStart electionEnd candidateRegistrationLastDate")
       .sort({ createdAt: -1 });
 
     // Format response with election details
@@ -250,6 +318,7 @@ const getMyCandidateRegistrations = async (req, res) => {
 
 module.exports = {
   registerCandidate,
+  resubmitCandidateRegistration,
   approveCandidate,
   getCandidatesByElection,
   getAllCandidates,
