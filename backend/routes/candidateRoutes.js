@@ -5,6 +5,7 @@ const uploadDocument = require("../middleware/uploadMiddleware"); // <-- your mu
 
 const {
   registerCandidate,
+  resubmitCandidateRegistration,
   approveCandidate,
   getCandidatesByElection,
   getAllCandidates,
@@ -24,6 +25,17 @@ router.post(
 
 // USER → get my candidate registrations
 router.get("/my-registrations", protect, getMyCandidateRegistrations);
+
+// USER/CANDIDATE → resubmit rejected registration
+router.put(
+  "/:id/resubmit",
+  protect,
+  uploadDocument.fields([
+    { name: "documentFile", maxCount: 1 },
+    { name: "symbol", maxCount: 1 }
+  ]),
+  resubmitCandidateRegistration
+);
 
 // ADMIN → list all candidates (for verification)
 router.get("/", protect, getAllCandidates);

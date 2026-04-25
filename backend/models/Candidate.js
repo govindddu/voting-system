@@ -43,6 +43,11 @@ const candidateSchema = new mongoose.Schema({
     default: "PENDING"
   },
 
+  remarks: {
+    type: String,
+    default: ""
+  },
+
 
   createdAt: {
     type: Date,

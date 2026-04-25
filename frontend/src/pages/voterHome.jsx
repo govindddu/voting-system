@@ -53,6 +53,8 @@ function VoterHome() {
     const [candidateDoc, setCandidateDoc] = useState(null);
     const [candidateSymbol, setCandidateSymbol] = useState(null);
     const [candidateMessage, setCandidateMessage] = useState({ type: "", text: "" });
+    const [candidateResubmitMessage, setCandidateResubmitMessage] = useState({ type: "", text: "" });
+    const [editingCandidateRegistration, setEditingCandidateRegistration] = useState(null);
 
     const [myCandidateRegistrations, setMyCandidateRegistrations] = useState([]);
     const [myRegistrationsLoading, setMyRegistrationsLoading] = useState(false);
@@ -800,12 +802,80 @@ function VoterHome() {
                     "Content-Type": "multipart/form-data"
                 }
             });
-            setCandidateMessage({ type: "success", text: data.message || "Candidate request sent for approval." });
+            setCandidateMessage({ type: "success", text: "Your request has been sent for admin approval." });
             setCandidateForm(defaultCandidateForm);
             setCandidateDoc(null);
             setCandidateSymbol(null);
         } catch (err) {
             setCandidateMessage({ type: "error", text: err.response?.data?.message || "Could not submit candidate request." });
+        }
+    }
+
+    const startEditingCandidateRegistration = (registration) => {
+        setEditingCandidateRegistration(registration);
+        setCandidateForm({
+            partyName: registration.partyName || "",
+            manifesto: registration.manifesto || "",
+            documentType: registration.documentType || "AADHAR"
+        });
+        setCandidateDoc(null);
+        setCandidateSymbol(null);
+        setCandidateResubmitMessage({ type: "", text: "" });
+    }
+
+    const handleCandidateResubmit = async (e) => {
+        e.preventDefault();
+        if (!token) {
+            setCandidateResubmitMessage({ type: "error", text: "Please sign in to continue." });
+            return;
+        }
+
+        if (!editingCandidateRegistration?._id) {
+            setCandidateResubmitMessage({ type: "error", text: "Invalid registration selected." });
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append("partyName", candidateForm.partyName);
+        formData.append("manifesto", candidateForm.manifesto);
+        formData.append("documentType", candidateForm.documentType);
+
+        if (candidateDoc) {
+            formData.append("documentFile", candidateDoc);
+        }
+
+        if (candidateSymbol) {
+            formData.append("symbol", candidateSymbol);
+        }
+
+        setCandidateResubmitMessage({ type: "", text: "" });
+        try {
+            const { data } = await axios.put(
+                `${API_BASE}/candidates/${editingCandidateRegistration._id}/resubmit`,
+                formData,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        "Content-Type": "multipart/form-data"
+                    }
+                }
+            );
+
+            setCandidateResubmitMessage({
+                type: "success",
+                text: data.message || "Candidate registration resubmitted successfully."
+            });
+
+            setEditingCandidateRegistration(null);
+            setCandidateForm(defaultCandidateForm);
+            setCandidateDoc(null);
+            setCandidateSymbol(null);
+            fetchMyCandidateRegistrations();
+        } catch (err) {
+            setCandidateResubmitMessage({
+                type: "error",
+                text: err.response?.data?.message || "Could not resubmit candidate registration."
+            });
         }
     }
 
@@ -1588,6 +1658,8 @@ function VoterHome() {
                         const now = new Date();
                         const startDate = electionInfo?.electionStart ? new Date(electionInfo.electionStart) : null;
                         const endDate = electionInfo?.electionEnd ? new Date(electionInfo.electionEnd) : null;
+                        const regCloseDate = electionInfo?.candidateRegistrationLastDate ? new Date(electionInfo.candidateRegistrationLastDate) : null;
+                        const isRegOpen = !regCloseDate || now <= regCloseDate;
 
                         let electionStatus = "UPCOMING";
                         if (startDate && endDate) {
@@ -1655,10 +1727,37 @@ function VoterHome() {
                                     <p className="muted small">Party: <strong>{registration.partyName}</strong></p>
                                     <p className="muted small">Manifesto: {registration.manifesto || "N/A"}</p>
                                     <p className="muted small">Applied on: {registration.createdAt ? new Date(registration.createdAt).toLocaleString() : "N/A"}</p>
+                                    {registration.status === "REJECTED" && (
+                                        <div style={{
+                                            marginTop: "10px",
+                                            padding: "10px",
+                                            backgroundColor: "#fff3cd",
+                                            borderLeft: "3px solid #ffc107",
+                                            borderRadius: "4px"
+                                        }}>
+                                            <p className="muted small" style={{ margin: 0, color: "#856404" }}>
+                                                <strong>Rejection Reason:</strong> {registration.remarks || "No reason provided by admin."}
+                                            </p>
+                                        </div>
+                                    )}
                                     {registration.blockchainCandidateId && (
                                         <p className="muted small" style={{ color: "#28a745", fontWeight: "600" }}>
                                             ✓ Registered on Blockchain (ID: {registration.blockchainCandidateId})
                                         </p>
+                                    )}
+                                    {registration.status === "REJECTED" && isRegOpen && (
+                                        <div style={{ marginTop: "12px" }}>
+                                            <button
+                                                type="button"
+                                                className="primary-btn"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    startEditingCandidateRegistration(registration);
+                                                }}
+                                            >
+                                                Edit & Resubmit
+                                            </button>
+                                        </div>
                                     )}
                                     <p className="muted small" style={{ marginTop: "10px", color: "#007bff", fontWeight: "600" }}>
                                         👁️ Click to view election details
@@ -1714,6 +1813,35 @@ function VoterHome() {
                                         <p className="muted small" style={{ margin: 0, color: "#856404" }}>
                                             <strong>Rejection Reason:</strong> {selectedRegistrationDetail.remarks}
                                         </p>
+                                    </div>
+                                )}
+                                {selectedRegistrationDetail.status === "REJECTED" && !selectedRegistrationDetail.remarks && (
+                                    <div style={{
+                                        marginTop: "10px",
+                                        padding: "10px",
+                                        backgroundColor: "#fff3cd",
+                                        borderLeft: "3px solid #ffc107",
+                                        borderRadius: "4px"
+                                    }}>
+                                        <p className="muted small" style={{ margin: 0, color: "#856404" }}>
+                                            <strong>Rejection Reason:</strong> No reason provided by admin.
+                                        </p>
+                                    </div>
+                                )}
+                                {selectedRegistrationDetail.status === "REJECTED" && (() => {
+                                    const electionInfo = selectedRegistrationDetail.electionId || selectedRegistrationDetail.election;
+                                    const regCloseDate = electionInfo?.candidateRegistrationLastDate ? new Date(electionInfo.candidateRegistrationLastDate) : null;
+                                    const isRegOpen = !regCloseDate || new Date() <= regCloseDate;
+                                    return isRegOpen;
+                                })() && (
+                                    <div style={{ marginTop: "12px" }}>
+                                        <button
+                                            type="button"
+                                            className="primary-btn"
+                                            onClick={() => startEditingCandidateRegistration(selectedRegistrationDetail)}
+                                        >
+                                            Edit Previous Form & Resubmit
+                                        </button>
                                     </div>
                                 )}
                             </div>
@@ -1927,6 +2055,87 @@ function VoterHome() {
                     </div>
                 </div>
             )}
+
+            {editingCandidateRegistration && (
+                <div className="panel soft" style={{ marginTop: "20px" }}>
+                    <div className="panel-header">
+                        <div>
+                            <p className="eyebrow">Resubmit Application</p>
+                            <h3>Edit Candidate Form</h3>
+                            <p className="muted small">Update your previous details and submit again for admin review.</p>
+                        </div>
+                        <button
+                            type="button"
+                            className="ghost-btn"
+                            onClick={() => setEditingCandidateRegistration(null)}
+                        >
+                            Cancel
+                        </button>
+                    </div>
+
+                    {candidateResubmitMessage.text && (
+                        <div className={`status ${candidateResubmitMessage.type === "error" ? "error" : "success"}`}>
+                            {candidateResubmitMessage.text}
+                        </div>
+                    )}
+
+                    <form className="admin-form" onSubmit={handleCandidateResubmit}>
+                        <div className="form-grid">
+                            <label>
+                                Party / affiliation
+                                <input
+                                    name="partyName"
+                                    value={candidateForm.partyName}
+                                    onChange={(e) => setCandidateForm({ ...candidateForm, partyName: e.target.value })}
+                                    required
+                                />
+                            </label>
+                            <label>
+                                Document type
+                                <select
+                                    name="documentType"
+                                    value={candidateForm.documentType}
+                                    onChange={(e) => setCandidateForm({ ...candidateForm, documentType: e.target.value })}
+                                >
+                                    <option value="AADHAR">Aadhar</option>
+                                    <option value="PAN">PAN</option>
+                                    <option value="VOTER">Voter ID</option>
+                                </select>
+                            </label>
+                            <label className="full">
+                                Manifesto / pitch
+                                <textarea
+                                    name="manifesto"
+                                    rows={3}
+                                    value={candidateForm.manifesto}
+                                    onChange={(e) => setCandidateForm({ ...candidateForm, manifesto: e.target.value })}
+                                    required
+                                />
+                            </label>
+                            <label className="full">
+                                Upload new supporting document
+                                <input
+                                    type="file"
+                                    accept="image/*,application/pdf"
+                                    onChange={(e) => setCandidateDoc(e.target.files?.[0] || null)}
+                                />
+                            </label>
+                            <label className="full">
+                                Upload new symbol (optional)
+                                <input
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={(e) => setCandidateSymbol(e.target.files?.[0] || null)}
+                                />
+                            </label>
+                        </div>
+                        <div className="action-row">
+                            <button type="submit" className="submit-btn">Resubmit for Approval</button>
+                        </div>
+                    </form>
+                </div>
+            )}
+
         </section>
     );
 
